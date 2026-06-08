@@ -30,35 +30,30 @@ export const PLAY_STYLES = [
 export const TCG_FIELDS: Record<TCGId, Array<{ key: string; label: string; type: string }>> = {
   mtg: [
     { key: 'favorite_color', label: 'Lieblingsfarbe',      type: 'manaColor'  },
-    { key: 'favorite_card',  label: 'Lieblingskarte',       type: 'cardPicker' },
     { key: 'playing_since',  label: 'Dabei seit (Jahr)',    type: 'text'       },
     { key: 'play_style',     label: 'Spielstil',            type: 'playStyle'  },
     { key: 'bio',            label: 'Über mich',            type: 'multiline'  },
   ],
   pokemon: [
     { key: 'favorite_type', label: 'Lieblingstyp',         type: 'text'       },
-    { key: 'favorite_card', label: 'Lieblingskarte',        type: 'cardPicker' },
     { key: 'playing_since', label: 'Dabei seit (Jahr)',     type: 'text'       },
     { key: 'play_style',    label: 'Spielstil',             type: 'playStyle'  },
     { key: 'bio',           label: 'Über mich',             type: 'multiline'  },
   ],
   yugioh: [
     { key: 'favorite_archetype', label: 'Lieblingsarchetyp', type: 'text'     },
-    { key: 'favorite_card',      label: 'Lieblingskarte',     type: 'text'     },
     { key: 'playing_since',      label: 'Dabei seit (Jahr)',  type: 'text'     },
     { key: 'play_style',         label: 'Spielstil',          type: 'playStyle'},
     { key: 'bio',                label: 'Über mich',          type: 'multiline'},
   ],
   starwars: [
     { key: 'faction',       label: 'Fraktion',              type: 'text'       },
-    { key: 'favorite_card', label: 'Lieblingskarte',         type: 'text'       },
     { key: 'playing_since', label: 'Dabei seit (Jahr)',      type: 'text'       },
     { key: 'play_style',    label: 'Spielstil',              type: 'playStyle'  },
     { key: 'bio',           label: 'Über mich',              type: 'multiline'  },
   ],
   lorcana: [
     { key: 'faction',       label: 'Fraktion / Tintenfarbe', type: 'text'      },
-    { key: 'favorite_card', label: 'Lieblingskarte',          type: 'text'      },
     { key: 'playing_since', label: 'Dabei seit (Jahr)',       type: 'text'      },
     { key: 'play_style',    label: 'Spielstil',               type: 'playStyle' },
     { key: 'bio',           label: 'Über mich',               type: 'multiline' },

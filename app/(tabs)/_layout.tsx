@@ -1,10 +1,15 @@
+import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { CompassIcon, PersonIcon } from '@/components/icons';
+import { FONTS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
   const insets = useSafeAreaInsets();
 
   return (
@@ -33,7 +38,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               style={[styles.tab, focused && styles.activeTab]}
               activeOpacity={0.75}
             >
-              {options.tabBarIcon?.({ focused, color: focused ? '#fff' : '#555', size: 22 })}
+              {options.tabBarIcon?.({ focused, color: focused ? C.primary : C.textDim, size: 22 })}
               <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
                 {label}
               </Text>
@@ -46,6 +51,8 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 }
 
 export default function TabLayout() {
+  const { colors: C } = useTheme();
+
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
@@ -56,7 +63,7 @@ export default function TabLayout() {
         options={{
           title: 'Entdecken',
           tabBarIcon: ({ focused }) => (
-            <CompassIcon color={focused ? '#FFFFFF' : '#555555'} size={22} />
+            <CompassIcon color={focused ? C.primary : C.textDim} size={22} active={focused} />
           ),
         }}
       />
@@ -65,7 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Profil',
           tabBarIcon: ({ focused }) => (
-            <PersonIcon color={focused ? '#FFFFFF' : '#555555'} size={22} />
+            <PersonIcon color={focused ? C.primary : C.textDim} size={22} active={focused} />
           ),
         }}
       />
@@ -73,37 +80,39 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: '#111111',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-  },
-  pill: {
-    flexDirection: 'row',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 40,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    gap: 4,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 34,
-    gap: 3,
-  },
-  activeTab: {
-    backgroundColor: '#2C2C2C',
-  },
-  tabLabel: {
-    color: '#555555',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  tabLabelActive: {
-    color: '#FFFFFF',
-  },
-});
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+    wrapper: {
+      backgroundColor: C.bg,
+      paddingHorizontal: 12,
+      paddingTop: 8,
+    },
+    pill: {
+      flexDirection: 'row',
+      backgroundColor: C.surface2,
+      borderRadius: 40,
+      paddingVertical: 6,
+      paddingHorizontal: 6,
+      gap: 4,
+    },
+    tab: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      borderRadius: 34,
+      gap: 3,
+    },
+    activeTab: {
+      backgroundColor: C.primaryGlow,
+    },
+    tabLabel: {
+      color: C.textDim,
+      fontSize: 11,
+      fontFamily: FONTS.semibold,
+    },
+    tabLabelActive: {
+      color: C.primary,
+    },
+  });
+}

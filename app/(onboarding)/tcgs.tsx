@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
-import { COLORS, SPACING } from '@/constants/theme';
+import { FONTS, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { TCG_LIST } from '@/constants/tcgs';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { TCGId } from '@/types';
 
 export default function TCGsScreen() {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
   const { selectedTCGs, setSelectedTCGs } = useOnboarding();
 
   const toggle = (id: TCGId) => {
@@ -102,7 +105,7 @@ export default function TCGsScreen() {
           style={[{ borderRadius: 16, overflow: 'hidden' }, selectedTCGs.length === 0 && styles.disabledWrap]}
         >
           <LinearGradient
-            colors={selectedTCGs.length > 0 ? ['#9333EA', '#6D28D9'] : [COLORS.surface3, COLORS.surface3]}
+            colors={selectedTCGs.length > 0 ? ['#9333EA', '#6D28D9'] : [C.surface3, C.surface3]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.continueBtn}
@@ -119,26 +122,27 @@ export default function TCGsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
   content: { padding: SPACING.lg, paddingBottom: SPACING.md },
 
   header: { marginBottom: SPACING.xl },
   step: {
-    color: COLORS.primary,
+    color: C.primary,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: FONTS.extrabold,
     letterSpacing: 2,
     marginBottom: SPACING.sm,
   },
   title: {
-    color: COLORS.text,
+    color: C.text,
     fontSize: 32,
-    fontWeight: '900',
+    fontFamily: FONTS.black,
     lineHeight: 38,
     marginBottom: SPACING.sm,
   },
-  subtitle: { color: COLORS.textMuted, fontSize: 15 },
+  subtitle: { color: C.textMuted, fontSize: 15 },
 
   list: { gap: SPACING.sm },
 
@@ -157,10 +161,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.surface,
     borderWidth: 1,
     borderLeftWidth: 0,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderTopRightRadius: 18,
     borderBottomRightRadius: 18,
     paddingHorizontal: SPACING.md,
@@ -179,9 +183,9 @@ const styles = StyleSheet.create({
 
   cardName: {
     flex: 1,
-    color: COLORS.text,
+    color: C.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
   },
 
   check: {
@@ -189,17 +193,17 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkMark: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  checkMark: { color: '#fff', fontSize: 14, fontFamily: FONTS.black },
 
   footer: {
     padding: SPACING.lg,
     paddingBottom: SPACING.xl,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: C.border,
   },
   disabledWrap: { opacity: 0.45 },
   continueBtn: {
@@ -207,5 +211,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
   },
-  continueBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-});
+  continueBtnText: { color: '#fff', fontSize: 17, fontFamily: FONTS.bold },
+  });
+}

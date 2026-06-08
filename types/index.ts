@@ -32,3 +32,25 @@ export interface UserTCGDetails {
   tcg: TCGId;
   details: Record<string, string>;
 }
+
+export interface DeckCard {
+  name: string;
+  quantity: number;
+  image: string | null;
+  id?: string;
+  isCommander?: boolean;
+  isSideboard?: boolean;
+  /** MTG color identity (WUBRG letters, e.g. ['W','U']; [] = colorless) — from Scryfall's `color_identity`. */
+  colorIdentity?: string[];
+}
+
+export interface UserDeck {
+  id: string;
+  user_id: string;
+  tcg: TCGId;
+  name: string;
+  format: string | null;
+  cards: DeckCard[];
+  card_count: number;
+  created_at: string;
+}

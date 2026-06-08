@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FONTS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export interface SelectedCard {
   id: string;
@@ -128,6 +130,8 @@ export function CardPicker({
   initialCards = [],
   game = 'mtg',
 }: Props) {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
   const { width } = useWindowDimensions();
   const containerWidth = Math.min(width, 500);
   const CARD_W = Math.floor((containerWidth - 48) / 3);
@@ -248,12 +252,12 @@ export function CardPicker({
               <TextInput
                 style={styles.searchInput}
                 placeholder={placeholder}
-                placeholderTextColor="#555"
+                placeholderTextColor={C.textDim}
                 value={query}
                 onChangeText={search}
                 autoCorrect={false}
               />
-              {loading && <ActivityIndicator color="#D4384A" size="small" />}
+              {loading && <ActivityIndicator color={C.primary} size="small" />}
             </View>
 
             {suggestions.length > 0 && (
@@ -364,8 +368,9 @@ export function CardPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111111' },
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
   inner: { flex: 1 },
 
   header: {
@@ -375,13 +380,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  title: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
+  title: { color: C.text, fontSize: 20, fontFamily: FONTS.extrabold },
   closeBtn: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: C.surface2,
     alignItems: 'center', justifyContent: 'center',
   },
-  closeText: { color: '#888888', fontSize: 14, fontWeight: '700' },
+  closeText: { color: C.textMuted, fontSize: 14, fontFamily: FONTS.bold },
 
   searchContainer: {
     marginHorizontal: 20,
@@ -391,24 +396,24 @@ const styles = StyleSheet.create({
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
+    backgroundColor: C.surface2,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
   },
-  searchIcon: { color: '#555555', fontSize: 18 },
-  searchInput: { flex: 1, color: '#FFFFFF', fontSize: 15 },
+  searchIcon: { color: C.textDim, fontSize: 18 },
+  searchInput: { flex: 1, color: C.text, fontSize: 15 },
 
   suggestionsBox: {
     position: 'absolute',
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: C.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: C.border,
     marginTop: 4,
     overflow: 'hidden',
     zIndex: 20,
@@ -417,15 +422,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 13,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    borderBottomColor: C.border,
   },
-  suggestionText: { color: '#FFFFFF', fontSize: 14 },
+  suggestionText: { color: C.text, fontSize: 14 },
 
   selectedStrip: { paddingHorizontal: 20, marginBottom: 14 },
   selectedLabel: {
-    color: '#888888',
+    color: C.textMuted,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 10,
@@ -434,35 +439,35 @@ const styles = StyleSheet.create({
   selectedThumbWrap: { position: 'relative' },
   selectedThumb: {
     width: 72, height: 100,
-    borderRadius: 6,
-    borderWidth: 2, borderColor: '#D4384A',
+    borderRadius: 8,
+    borderWidth: 2, borderColor: C.primary,
   },
   removeTag: {
     position: 'absolute', top: -7, right: -7,
     width: 20, height: 20, borderRadius: 10,
-    backgroundColor: '#D4384A',
+    backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  removeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+  removeText: { color: '#fff', fontSize: 9, fontFamily: FONTS.black },
 
   grid: { paddingHorizontal: 12, paddingBottom: 20, gap: 6 },
   cardWrap: {
     margin: 3,
-    borderRadius: 6,
+    borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: C.surface,
   },
-  cardWrapSel: { borderWidth: 2.5, borderColor: '#D4384A' },
+  cardWrapSel: { borderWidth: 2.5, borderColor: C.primary },
   cardImg: { width: '100%', height: '100%' },
   checkOverlay: {
     position: 'absolute', top: 5, right: 5,
     width: 26, height: 26, borderRadius: 13,
-    backgroundColor: '#D4384A',
+    backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  checkText: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  checkText: { color: '#fff', fontSize: 14, fontFamily: FONTS.black },
 
-  emptyText: { color: '#555555', textAlign: 'center', padding: 48, fontSize: 15 },
+  emptyText: { color: C.textDim, textAlign: 'center', padding: 48, fontSize: 15 },
 
   zoomOverlay: {
     position: 'absolute',
@@ -482,13 +487,14 @@ const styles = StyleSheet.create({
     elevation: 32,
   },
 
-  footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#1E1E1E' },
+  footer: { padding: 20, borderTopWidth: 1, borderTopColor: C.border },
   confirmBtn: {
-    backgroundColor: '#D4384A',
-    borderRadius: 12,
+    backgroundColor: C.primary,
+    borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
   },
-  confirmBtnOff: { backgroundColor: '#1E1E1E' },
-  confirmText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-});
+  confirmBtnOff: { backgroundColor: C.surface2 },
+  confirmText: { color: '#FFFFFF', fontSize: 16, fontFamily: FONTS.bold },
+  });
+}

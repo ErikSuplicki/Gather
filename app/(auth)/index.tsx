@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,20 +9,24 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { COLORS, SPACING } from '@/constants/theme';
+import { FONTS, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/auth';
+import { showAlert } from '@/lib/alert';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type Mode = 'signin' | 'signup';
 
 export default function AuthScreen() {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +36,7 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       const { error } = await fn();
-      if (error) Alert.alert('Fehler', error.message);
+      if (error) showAlert('Fehler', error.message);
     } finally {
       setLoading(false);
     }
@@ -40,7 +44,7 @@ export default function AuthScreen() {
 
   const handleEmail = () => {
     if (!email.trim() || !password) {
-      Alert.alert('Fehler', 'Bitte E-Mail und Passwort eingeben.');
+      showAlert('Fehler', 'Bitte E-Mail und Passwort eingeben.');
       return;
     }
     withLoading(() =>
@@ -54,7 +58,7 @@ export default function AuthScreen() {
     <View style={styles.root}>
       {/* ── Hero gradient (Luma-inspired) ── */}
       <LinearGradient
-        colors={['#1E0A3C', '#120824', COLORS.bg]}
+        colors={['#1E0A3C', '#120824', C.bg]}
         locations={[0, 0.55, 1]}
         style={styles.heroBg}
       />
@@ -89,7 +93,7 @@ export default function AuthScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="E-Mail"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={C.textMuted}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -100,7 +104,7 @@ export default function AuthScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Passwort"
-                  placeholderTextColor={COLORS.textMuted}
+                  placeholderTextColor={C.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -116,7 +120,7 @@ export default function AuthScreen() {
                 style={styles.primaryBtnWrap}
               >
                 <LinearGradient
-                  colors={loading ? [COLORS.surface3, COLORS.surface3] : ['#9333EA', '#6D28D9']}
+                  colors={loading ? [C.surface3, C.surface3] : ['#9333EA', '#6D28D9']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.primaryBtn}
@@ -181,9 +185,10 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  heroBg: { ...StyleSheet.absoluteFillObject },
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+  heroBg: { ...StyleSheet.absoluteFill },
   glowOrb: {
     position: 'absolute',
     top: SCREEN_HEIGHT * 0.06,
@@ -211,24 +216,25 @@ const styles = StyleSheet.create({
   logoEmoji: { fontSize: 80, marginBottom: SPACING.sm },
   appName: {
     fontSize: 42,
-    fontWeight: '900',
-    color: COLORS.text,
+    fontFamily: FONTS.black,
+    color: C.text,
     letterSpacing: 10,
     marginBottom: SPACING.sm,
   },
   tagline: {
     fontSize: 15,
-    color: COLORS.textMuted,
+    fontFamily: FONTS.regular,
+    color: C.textMuted,
     textAlign: 'center',
     letterSpacing: 0.3,
   },
 
   /* Card */
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.surface,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     padding: SPACING.lg,
     gap: SPACING.md,
     // shadow
@@ -239,20 +245,21 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   cardTitle: {
-    color: COLORS.text,
+    color: C.text,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     marginBottom: SPACING.xs,
   },
   inputs: { gap: SPACING.sm },
   input: {
-    backgroundColor: COLORS.surface2,
+    backgroundColor: C.surface2,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderRadius: 14,
     paddingHorizontal: SPACING.md,
     paddingVertical: 14,
-    color: COLORS.text,
+    color: C.text,
+    fontFamily: FONTS.regular,
     fontSize: 16,
   },
   primaryBtnWrap: { borderRadius: 14, overflow: 'hidden' },
@@ -262,11 +269,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   disabled: { opacity: 0.5 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontFamily: FONTS.bold, letterSpacing: 0.3 },
   toggleText: {
-    color: COLORS.primaryLight,
+    color: C.primaryLight,
     textAlign: 'center',
     fontSize: 14,
+    fontFamily: FONTS.medium,
     paddingVertical: SPACING.xs,
   },
 
@@ -276,11 +284,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: SPACING.lg,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
   dividerText: {
-    color: COLORS.textMuted,
+    color: C.textMuted,
     marginHorizontal: SPACING.md,
     fontSize: 13,
+    fontFamily: FONTS.medium,
   },
 
   /* Social */
@@ -290,12 +299,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderRadius: 14,
     paddingVertical: 14,
   },
   socialIcon: { fontSize: 18 },
-  socialBtnText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
-});
+  socialBtnText: { color: C.text, fontSize: 15, fontFamily: FONTS.semibold },
+  });
+}

@@ -36,11 +36,24 @@ create table public.user_tcg_details (
   unique(user_id, tcg)
 );
 
+-- 4. Imported decks (paste-decklist import; many per user+tcg)
+create table public.user_decks (
+  id          uuid default gen_random_uuid() primary key,
+  user_id     uuid references public.profiles on delete cascade not null,
+  tcg         text not null check (tcg in ('mtg','pokemon','yugioh','starwars','lorcana')),
+  name        text not null,
+  format      text,
+  cards       jsonb not null default '[]'::jsonb,
+  card_count  integer not null default 0,
+  created_at  timestamp with time zone default timezone('utc', now())
+);
+
 -- ── Row Level Security ──────────────────────────────────────
 
 alter table public.profiles        enable row level security;
 alter table public.user_tcgs       enable row level security;
 alter table public.user_tcg_details enable row level security;
+alter table public.user_decks      enable row level security;
 
 -- Profiles: public read, own write
 create policy "Profiles are publicly readable"
@@ -61,6 +74,12 @@ create policy "TCG details are publicly readable"
   on public.user_tcg_details for select using (true);
 create policy "Users manage their own TCG details"
   on public.user_tcg_details for all using (auth.uid() = user_id);
+
+-- user_decks: public read, own write
+create policy "Decks are publicly readable"
+  on public.user_decks for select using (true);
+create policy "Users manage their own decks"
+  on public.user_decks for all using (auth.uid() = user_id);
 
 -- ── Auto-create profile on signup ──────────────────────────
 

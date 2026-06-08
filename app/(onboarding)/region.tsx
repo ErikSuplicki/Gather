@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 
-import { COLORS, SPACING } from '@/constants/theme';
+import { FONTS, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
 interface NominatimResult {
@@ -34,6 +35,8 @@ function formatAddress(address: NominatimResult['address']): string {
 }
 
 export default function RegionScreen() {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
   const { setRegion, setLocation } = useOnboarding();
   const [locating, setLocating] = useState(false);
   const [confirmedLocation, setConfirmedLocation] = useState('');
@@ -128,7 +131,7 @@ export default function RegionScreen() {
           activeOpacity={0.8}
         >
           {locating ? (
-            <ActivityIndicator color={COLORS.primary} />
+            <ActivityIndicator color={C.primary} />
           ) : (
             <Text style={styles.locationBtnText}>📍   Meinen Standort verwenden</Text>
           )}
@@ -153,7 +156,7 @@ export default function RegionScreen() {
         <TextInput
           style={styles.input}
           placeholder="z.B. München, Bayern"
-          placeholderTextColor={COLORS.textMuted}
+          placeholderTextColor={C.textMuted}
           value={query}
           onChangeText={handleQueryChange}
           autoCorrect={false}
@@ -191,23 +194,24 @@ export default function RegionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
   content: { flex: 1, padding: SPACING.lg },
   header: { marginBottom: SPACING.xl },
-  step: { color: COLORS.primary, fontSize: 11, fontWeight: '800', letterSpacing: 2, marginBottom: SPACING.sm },
-  title: { color: COLORS.text, fontSize: 30, fontWeight: '800', lineHeight: 36, marginBottom: SPACING.sm },
-  subtitle: { color: COLORS.textMuted, fontSize: 15, lineHeight: 22 },
+  step: { color: C.primary, fontSize: 11, fontFamily: FONTS.extrabold, letterSpacing: 2, marginBottom: SPACING.sm },
+  title: { color: C.text, fontSize: 30, fontFamily: FONTS.extrabold, lineHeight: 36, marginBottom: SPACING.sm },
+  subtitle: { color: C.textMuted, fontSize: 15, lineHeight: 22 },
   locationBtn: {
-    backgroundColor: COLORS.surface2,
+    backgroundColor: C.surface2,
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: C.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
-  locationBtnText: { color: COLORS.primaryLight, fontSize: 16, fontWeight: '600' },
+  locationBtnText: { color: C.primaryLight, fontSize: 16, fontFamily: FONTS.semibold },
   confirmedCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,37 +223,37 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     marginBottom: SPACING.sm,
   },
-  confirmedIcon: { fontSize: 22, color: COLORS.success, fontWeight: '700' },
+  confirmedIcon: { fontSize: 22, color: C.success, fontFamily: FONTS.bold },
   confirmedText: { flex: 1 },
   confirmedLabel: {
-    color: COLORS.success,
+    color: C.success,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  confirmedCity: { color: COLORS.text, fontSize: 16, fontWeight: '700', marginTop: 2 },
+  confirmedCity: { color: C.text, fontSize: 16, fontFamily: FONTS.bold, marginTop: 2 },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: SPACING.lg,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
-  dividerText: { color: COLORS.textMuted, marginHorizontal: SPACING.md, fontSize: 13 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
+  dividerText: { color: C.textMuted, marginHorizontal: SPACING.md, fontSize: 13 },
   input: {
-    backgroundColor: COLORS.surface2,
+    backgroundColor: C.surface2,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderRadius: 14,
     paddingHorizontal: SPACING.md,
     paddingVertical: 15,
-    color: COLORS.text,
+    color: C.text,
     fontSize: 16,
   },
   suggestionsContainer: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderRadius: 14,
     marginTop: SPACING.xs,
     overflow: 'hidden',
@@ -260,21 +264,22 @@ const styles = StyleSheet.create({
   },
   suggestionBorder: {
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: C.border,
   },
-  suggestionText: { color: COLORS.text, fontSize: 14 },
+  suggestionText: { color: C.text, fontSize: 14 },
   footer: {
     padding: SPACING.lg,
     paddingBottom: SPACING.xl,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: C.border,
   },
   continueBtn: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: C.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
   },
   disabled: { opacity: 0.35 },
-  continueBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-});
+  continueBtnText: { color: '#fff', fontSize: 17, fontFamily: FONTS.bold },
+  });
+}

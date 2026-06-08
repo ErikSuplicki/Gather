@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,34 +14,43 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
 import { TCG_MAP, TCG_FIELDS, MTG_COLORS, PLAY_STYLES } from '@/constants/tcgs';
+import { FONTS, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { ManaSymbol } from '@/components/icons';
-import { CardPicker, SelectedCard, CardGame } from '@/components/CardPicker';
-
-function parseCards(val: unknown): SelectedCard[] {
-  if (Array.isArray(val)) return val as SelectedCard[];
-  if (typeof val !== 'string' || !val) return [];
-  try {
-    const parsed = JSON.parse(val);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {}
-  return [];
-}
+import { DeckImportModal } from '@/components/DeckImportModal';
+import { DeckBrowserModal } from '@/components/DeckBrowserModal';
+import { DeckTile } from '@/components/DeckTile';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar, signOut } from '@/lib/auth';
-import { Profile, UserTCG, TCGId } from '@/types';
+import { Profile, UserTCG, TCGId, UserDeck } from '@/types';
 
-const C = {
-  bg: '#111111',
-  surface: '#1A1A1A',
-  surface2: '#1C1C1C',
-  border: '#2A2A2A',
-  red: '#D4384A',
-  white: '#FFFFFF',
-  gray: '#888888',
-  dim: '#444444',
+// ─── Design-only placeholder content (mirrors the reference mockup; no backing data yet) ───
+const PLACEHOLDER_BIO = 'Sammle seit Jahren Karten, liebe enge Matches und ziehe nach jedem Turnier ein neues Deck aus dem Hut. Immer offen für eine Partie.';
+
+const PLAYER_LEVEL = 24;
+const PLAYER_XP = 2350;
+const PLAYER_XP_NEXT = 3000;
+
+const ENGAGEMENT_STATS = [
+  { icon: '🎮', value: '72', label: 'Events besucht' },
+  { icon: '👥', value: '143', label: 'Gegner gespielt' },
+  { icon: '🏆', value: '28', label: 'Turniere' },
+  { icon: '⭐', value: '4.8', label: 'Bewertung' },
+];
+
+const TCG_START_DATE_PLACEHOLDER = 'Januar 2021';
+
+const PLACEHOLDER_ACTIVITY = {
+  icon: '🎲',
+  lead: 'Nimmt teil an',
+  highlight: 'Commander Night',
+  meta: 'Heute, 19:00',
 };
 
 export default function ProfileScreen() {
+  const { colors: C, scheme, toggleScheme } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [tcgs, setTcgs] = useState<UserTCG[]>([]);
   const [tcgDetails, setTcgDetails] = useState<Record<string, string>>({});
@@ -52,31 +61,44 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [editSkill, setEditSkill] = useState(0);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerGame, setPickerGame] = useState<CardGame>('mtg');
-  const pickerFieldKeyRef = useRef('');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [decks, setDecks] = useState<UserDeck[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserInitialDeckId, setBrowserInitialDeckId] = useState<string | null>(null);
 
-  const openCardPicker = (fieldKey: string) => {
-    pickerFieldKeyRef.current = fieldKey;
-    setPickerGame(activeTCG === 'mtg' ? 'mtg' : 'pokemon');
-    setPickerOpen(true);
+  const openDeckBrowser = (deckId: string | null = null) => {
+    setBrowserInitialDeckId(deckId);
+    setBrowserOpen(true);
   };
 
-  const handleCardSelect = (cards: SelectedCard[]) => {
-    const key = pickerFieldKeyRef.current;
-    setEditDetails(prev => ({
-      ...prev,
-      [key]: cards.length > 0 ? JSON.stringify(cards) : '',
-    }));
+  const openDeckImportFromBrowser = () => {
+    setBrowserOpen(false);
+    setImportOpen(true);
+  };
+
+  const handleImportedDeck = (deck: UserDeck) => {
+    setDecks(prev => [deck, ...prev]);
+  };
+
+  const handleDeckUpdated = (deck: UserDeck) => {
+    setDecks(prev => prev.map(d => (d.id === deck.id ? deck : d)));
+  };
+
+  const deleteDeck = async (deck: UserDeck) => {
+    setDecks(prev => prev.filter(d => d.id !== deck.id));
+    const { error } = await supabase.from('user_decks').delete().eq('id', deck.id);
+    if (error) console.error('deleteDeck failed:', error);
   };
 
   const fetchProfile = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    const userId = session.user.id;
+    const uid = session.user.id;
+    setUserId(uid);
     const [{ data: p }, { data: t }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).single(),
-      supabase.from('user_tcgs').select('*').eq('user_id', userId).order('tcg'),
+      supabase.from('profiles').select('*').eq('id', uid).single(),
+      supabase.from('user_tcgs').select('*').eq('user_id', uid).order('tcg'),
     ]);
     setProfile(p);
     const list = (t ?? []) as UserTCG[];
@@ -97,7 +119,21 @@ export default function ProfileScreen() {
     setEditDetails(d);
   }, []);
 
-  useEffect(() => { if (activeTCG) fetchTCGDetails(activeTCG); }, [activeTCG, fetchTCGDetails]);
+  const fetchDecks = useCallback(async (tcg: TCGId) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const { data } = await supabase
+      .from('user_decks').select('*')
+      .eq('user_id', session.user.id).eq('tcg', tcg)
+      .order('created_at', { ascending: false });
+    setDecks((data ?? []) as UserDeck[]);
+  }, []);
+
+  useEffect(() => {
+    if (!activeTCG) return;
+    fetchTCGDetails(activeTCG);
+    fetchDecks(activeTCG);
+  }, [activeTCG, fetchTCGDetails, fetchDecks]);
 
   const saveDetails = async () => {
     if (!activeTCG) return;
@@ -142,7 +178,7 @@ export default function ProfileScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchProfile()
-      .then(() => { if (activeTCG) return fetchTCGDetails(activeTCG); })
+      .then(() => { if (activeTCG) return Promise.all([fetchTCGDetails(activeTCG), fetchDecks(activeTCG)]); })
       .finally(() => setRefreshing(false));
   };
 
@@ -150,7 +186,7 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.center}>
-          <ActivityIndicator color={C.red} size="large" />
+          <ActivityIndicator color={C.primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -163,18 +199,41 @@ export default function ProfileScreen() {
     ? Math.round(tcgs.reduce((s, t) => s + t.skill_level, 0) / tcgs.length)
     : 0;
 
+  const handle = (profile?.username ?? 'spieler').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+    : '—';
+  const xpPct = Math.min(100, Math.round((PLAYER_XP / PLAYER_XP_NEXT) * 100));
+  const tcgStartStats = [
+    { icon: '📊', value: '61%', label: 'Winrate' },
+    { icon: '🃏', value: String(decks.length), label: 'Decks' },
+    { icon: '⏱️', value: '312h', label: 'Gesamtspielzeit' },
+    { icon: '📈', value: '3', label: 'Top 8 Finishes' },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.red} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
       >
         {/* ── Page header ── */}
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Profil</Text>
-          <TouchableOpacity style={styles.signOutCircle} onPress={() => signOut()}>
-            <Text style={styles.signOutArrow}>↪</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.signOutCircle} onPress={() => {}} activeOpacity={0.7}>
+              <Text style={styles.signOutArrow}>↗</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.signOutCircle} onPress={() => {}} activeOpacity={0.7}>
+              <Text style={styles.signOutArrow}>⋯</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.signOutCircle} onPress={toggleScheme}>
+              <Text style={styles.signOutArrow}>{scheme === 'dark' ? '☀️' : '🌙'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.signOutCircle} onPress={() => signOut()}>
+              <Text style={styles.signOutArrow}>↪</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* ── Avatar + info ── */}
@@ -189,15 +248,45 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             )}
+            <View style={styles.onlineDot} />
             <View style={styles.cameraTag}>
               <Text style={{ fontSize: 10 }}>📷</Text>
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.username}>{profile?.username ?? '—'}</Text>
-          {profile?.region ? (
-            <Text style={styles.location}>📍  {profile.region}</Text>
-          ) : null}
+          <View style={styles.nameRow}>
+            <Text style={styles.username}>{profile?.username ?? '—'}</Text>
+            <View style={styles.verifiedBadge}>
+              <Text style={styles.verifiedBadgeText}>✦</Text>
+            </View>
+          </View>
+          <Text style={styles.handle}>@{handle}</Text>
+          <Text style={styles.bio}>{PLACEHOLDER_BIO}</Text>
+
+          <View style={styles.metaRow}>
+            {!!profile?.region && (
+              <View style={styles.metaItem}>
+                <Text style={styles.metaIcon}>📍</Text>
+                <Text style={styles.metaText}>{profile.region}</Text>
+              </View>
+            )}
+            <View style={styles.metaItem}>
+              <Text style={styles.metaIcon}>📅</Text>
+              <Text style={styles.metaText}>Mitglied seit {memberSince}</Text>
+            </View>
+          </View>
+
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.actionPrimary} onPress={() => {}} activeOpacity={0.85}>
+              <Text style={styles.actionPrimaryText}>Nachricht</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionOutline} onPress={() => {}} activeOpacity={0.85}>
+              <Text style={styles.actionOutlineText}>Freund hinzufügen</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionOutline} onPress={() => {}} activeOpacity={0.85}>
+              <Text style={styles.actionOutlineText}>Gemeinsames Event</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* ── Stats row ── */}
@@ -224,36 +313,82 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── TCG sub-tabs (Riot underline style) ── */}
+        {/* ── TCG selector pills ── */}
         {tcgs.length > 0 && (
-          <View style={styles.tcgTabsWrap}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.tcgTabs}>
-                {tcgs.map(t => {
-                  const info = TCG_MAP[t.tcg as TCGId];
-                  const isActive = t.tcg === activeTCG;
-                  return (
-                    <TouchableOpacity
-                      key={t.tcg}
-                      onPress={() => { setActiveTCG(t.tcg as TCGId); setEditing(false); }}
-                      style={styles.tcgTab}
-                    >
-                      <Text style={[styles.tcgTabText, isActive && styles.tcgTabTextActive]}>
-                        {info.name.split(':')[0]}
-                      </Text>
-                      <View style={[styles.tcgTabLine, isActive && styles.tcgTabLineActive]} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+          <View style={styles.tcgPillsWrap}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tcgPillsRow}>
+              {tcgs.map(t => {
+                const info = TCG_MAP[t.tcg as TCGId];
+                const isActive = t.tcg === activeTCG;
+                return (
+                  <TouchableOpacity
+                    key={t.tcg}
+                    onPress={() => { setActiveTCG(t.tcg as TCGId); setEditing(false); }}
+                    style={[styles.tcgPill, isActive && styles.tcgPillActive]}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.tcgPillEmoji}>{info.emoji}</Text>
+                    <Text style={[styles.tcgPillText, isActive && styles.tcgPillTextActive]} numberOfLines={1}>
+                      {info.name.split(':')[0]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
-            <View style={styles.tabsDivider} />
           </View>
         )}
+
+        {/* ── Spielerlevel ── */}
+        <View style={styles.levelCard}>
+          <View style={styles.levelCardTop}>
+            <Text style={styles.cardEyebrow}>SPIELERLEVEL</Text>
+            <View style={styles.levelBadge}>
+              <View style={styles.levelBadgeWingL} />
+              <View style={styles.levelBadgeWingR} />
+              <View style={styles.levelBadgeDiamond} />
+              <Text style={styles.levelBadgeGlyph}>★</Text>
+            </View>
+          </View>
+          <View style={styles.levelValueRow}>
+            <Text style={styles.levelValue}>Lv. {PLAYER_LEVEL}</Text>
+            <Text style={styles.levelXpText}>
+              {PLAYER_XP.toLocaleString('de-DE')} / {PLAYER_XP_NEXT.toLocaleString('de-DE')} XP
+            </Text>
+          </View>
+          <View style={styles.xpTrack}>
+            <View style={[styles.xpFill, { width: `${xpPct}%` }]} />
+          </View>
+
+          <View style={styles.engagementRow}>
+            {ENGAGEMENT_STATS.map(s => (
+              <View key={s.label} style={styles.engagementItem}>
+                <Text style={styles.engagementIcon}>{s.icon}</Text>
+                <Text style={styles.engagementValue}>{s.value}</Text>
+                <Text style={styles.engagementLabel}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
 
         {/* ── TCG content ── */}
         {activeTCG && activeTCGInfo && (
           <View style={styles.tcgContent}>
+
+            {/* Seit Beginn bei … */}
+            <View style={[styles.sinceCard, { borderColor: activeTCGInfo.color + '33' }]}>
+              <Text style={styles.sinceTitle}>
+                Seit Beginn bei {activeTCGInfo.name.split(':')[0]} · {TCG_START_DATE_PLACEHOLDER}
+              </Text>
+              <View style={styles.engagementRow}>
+                {tcgStartStats.map(s => (
+                  <View key={s.label} style={styles.engagementItem}>
+                    <Text style={styles.engagementIcon}>{s.icon}</Text>
+                    <Text style={styles.engagementValue}>{s.value}</Text>
+                    <Text style={styles.engagementLabel}>{s.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
 
             {/* Skill bar */}
             <View style={styles.skillSection}>
@@ -266,7 +401,7 @@ export default function ProfileScreen() {
                     return (
                       <TouchableOpacity
                         key={i}
-                        style={[styles.skillSeg, styles.skillSegEditable, filled && { backgroundColor: C.red }]}
+                        style={[styles.skillSeg, styles.skillSegEditable, filled && { backgroundColor: C.primary }]}
                         onPress={() => setEditSkill(i + 1)}
                         activeOpacity={0.7}
                         hitSlop={{ top: 14, bottom: 14 }}
@@ -274,7 +409,7 @@ export default function ProfileScreen() {
                     );
                   }
                   return (
-                    <View key={i} style={[styles.skillSeg, filled && { backgroundColor: C.red }]} />
+                    <View key={i} style={[styles.skillSeg, filled && { backgroundColor: C.primary }]} />
                   );
                 })}
                 <Text style={styles.skillNum}>{editing ? editSkill : activeTCGSkill}/10</Text>
@@ -290,7 +425,7 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity onPress={saveDetails} disabled={saving} style={styles.saveBtn}>
                     {saving
-                      ? <ActivityIndicator color={C.white} size="small" />
+                      ? <ActivityIndicator color={C.text} size="small" />
                       : <Text style={styles.saveBtnText}>Speichern</Text>
                     }
                   </TouchableOpacity>
@@ -305,6 +440,51 @@ export default function ProfileScreen() {
               )}
             </View>
 
+            {/* Decks */}
+            <View style={styles.decksSection}>
+              <View style={styles.decksHeader}>
+                <Text style={styles.cardEyebrow}>DECKS ({decks.length})</Text>
+                <TouchableOpacity onPress={() => setImportOpen(true)}>
+                  <Text style={styles.viewAllText}>+ Deck importieren</Text>
+                </TouchableOpacity>
+              </View>
+
+              {decks.length > 0 ? (
+                <>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.deckRow}>
+                    {decks.map(deck => (
+                      <DeckTile
+                        key={deck.id}
+                        deck={deck}
+                        tcgInfo={activeTCGInfo}
+                        onPress={() => openDeckBrowser(deck.id)}
+                        editing={editing}
+                        onDelete={() => deleteDeck(deck)}
+                      />
+                    ))}
+                  </ScrollView>
+                  <TouchableOpacity
+                    style={styles.viewAllDecksBtn}
+                    onPress={() => openDeckBrowser(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.viewAllDecksText}>Alle {decks.length} Decks anzeigen ›</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.fieldEmpty}>Noch keine Decks importiert</Text>
+                  <TouchableOpacity
+                    style={styles.importDeckBtn}
+                    onPress={() => setImportOpen(true)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.importDeckText}>+ Deck importieren</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+
             {/* Fields */}
             {fields.map(field => {
               const displayVal = (editing ? editDetails : tcgDetails)[field.key] ?? '';
@@ -312,42 +492,7 @@ export default function ProfileScreen() {
                 <View key={field.key} style={styles.fieldBlock}>
                   <Text style={styles.fieldLabel}>{field.label}</Text>
 
-                  {field.type === 'cardPicker' ? (
-                    <View>
-                      {/* Card images — shown in both view and edit mode */}
-                      {parseCards(displayVal).length > 0 && (
-                        <View style={styles.cardRow}>
-                          {parseCards(displayVal).map(c => (
-                            <View key={c.id} style={styles.cardItem}>
-                              <Image
-                                source={{ uri: c.image }}
-                                style={styles.cardPreview}
-                                resizeMode="cover"
-                              />
-                              <Text style={styles.cardName} numberOfLines={2}>{c.name}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-                      {parseCards(displayVal).length === 0 && !editing && (
-                        <Text style={styles.fieldEmpty}>—</Text>
-                      )}
-                      {/* Edit / change button */}
-                      {editing && (
-                        <TouchableOpacity
-                          style={styles.pickCardBtn}
-                          onPress={() => openCardPicker(field.key)}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={styles.pickCardText}>
-                            {parseCards(displayVal).length > 0
-                              ? '✎  Karten ändern'
-                              : '+ Karte auswählen'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ) : field.type === 'manaColor' ? (
+                  {field.type === 'manaColor' ? (
                     <View style={styles.manaRow}>
                       {MTG_COLORS.map(c => {
                         const isSel = displayVal === c.id;
@@ -393,7 +538,7 @@ export default function ProfileScreen() {
                       style={[styles.fieldInput, field.type === 'multiline' && styles.multilineInput]}
                       value={editDetails[field.key] ?? ''}
                       onChangeText={v => setEditDetails(p => ({ ...p, [field.key]: v }))}
-                      placeholderTextColor={C.dim}
+                      placeholderTextColor={C.textDim}
                       placeholder={`${field.label} eingeben...`}
                       multiline={field.type === 'multiline'}
                       numberOfLines={field.type === 'multiline' ? 4 : 1}
@@ -406,6 +551,27 @@ export default function ProfileScreen() {
                 </View>
               );
             })}
+
+            {/* Letzte Aktivitäten */}
+            <View style={styles.activitySection}>
+              <View style={styles.decksHeader}>
+                <Text style={styles.cardEyebrow}>LETZTE AKTIVITÄTEN</Text>
+                <TouchableOpacity onPress={() => {}}>
+                  <Text style={styles.viewAllText}>Alle anzeigen</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.activityRow}>
+                <View style={styles.activityIconWrap}>
+                  <Text style={styles.activityIcon}>{PLACEHOLDER_ACTIVITY.icon}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.activityTitle} numberOfLines={1}>
+                    {PLACEHOLDER_ACTIVITY.lead} <Text style={styles.activityHighlight}>{PLACEHOLDER_ACTIVITY.highlight}</Text>
+                  </Text>
+                  <Text style={styles.activityMeta}>{PLACEHOLDER_ACTIVITY.meta}</Text>
+                </View>
+              </View>
+            </View>
           </View>
         )}
 
@@ -418,22 +584,36 @@ export default function ProfileScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <CardPicker
-        visible={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onSelect={handleCardSelect}
-        maxCards={4}
-        initialCards={parseCards(editDetails[pickerFieldKeyRef.current] ?? '')}
-        game={pickerGame}
-      />
+      {activeTCG && (
+        <DeckImportModal
+          visible={importOpen}
+          onClose={() => setImportOpen(false)}
+          tcg={activeTCG}
+          userId={userId ?? ''}
+          onImported={handleImportedDeck}
+        />
+      )}
+      {activeTCGInfo && (
+        <DeckBrowserModal
+          visible={browserOpen}
+          onClose={() => setBrowserOpen(false)}
+          decks={decks}
+          tcgInfo={activeTCGInfo}
+          initialDeckId={browserInitialDeckId}
+          editing={editing}
+          onDeckUpdated={handleDeckUpdated}
+          onImportDeck={openDeckImportFromBrowser}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: C.gray, fontSize: 15, textAlign: 'center' },
+  emptyText: { color: C.textMuted, fontSize: 15, textAlign: 'center' },
 
   /* Header */
   header: {
@@ -445,11 +625,12 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   pageTitle: {
-    color: C.white,
+    color: C.text,
     fontSize: 36,
-    fontWeight: '900',
+    fontFamily: FONTS.black,
     letterSpacing: -0.5,
   },
+  headerActions: { flexDirection: 'row', gap: 10 },
   signOutCircle: {
     width: 38,
     height: 38,
@@ -458,7 +639,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signOutArrow: { color: C.gray, fontSize: 18 },
+  signOutArrow: { color: C.textMuted, fontSize: 18 },
 
   /* Profile section */
   profileSection: {
@@ -478,7 +659,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { fontSize: 36, fontWeight: '800', color: C.red },
+  avatarInitial: { fontSize: 36, fontFamily: FONTS.extrabold, color: C.primary },
   cameraTag: {
     position: 'absolute',
     bottom: 2,
@@ -492,67 +673,214 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  username: { color: C.white, fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  location: { color: C.gray, fontSize: 14 },
+  username: { color: C.text, fontSize: 22, fontFamily: FONTS.extrabold, marginBottom: 4 },
+  location: { color: C.textMuted, fontSize: 14 },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 4,
+    left: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: C.success,
+    borderWidth: 2.5,
+    borderColor: C.bg,
+  },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  verifiedBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifiedBadgeText: { color: '#FFFFFF', fontSize: 10 },
+  handle: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.medium, marginTop: 2 },
+  bio: {
+    color: C.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center',
+    marginTop: 10,
+    paddingHorizontal: 12,
+  },
+
+  /* Meta row */
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginTop: 14 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  metaIcon: { fontSize: 13 },
+  metaText: { color: C.textMuted, fontSize: 12.5, fontFamily: FONTS.medium },
+
+  /* Action buttons */
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 18 },
+  actionPrimary: {
+    backgroundColor: C.primary,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+  },
+  actionPrimaryText: { color: '#FFFFFF', fontSize: 13.5, fontFamily: FONTS.bold },
+  actionOutline: {
+    borderWidth: 1.5,
+    borderColor: C.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  actionOutlineText: { color: C.text, fontSize: 13.5, fontFamily: FONTS.semibold },
 
   /* Stats */
   statsRow: {
     flexDirection: 'row',
     backgroundColor: C.surface,
-    borderRadius: 16,
+    borderRadius: 20,
     marginHorizontal: 20,
     paddingVertical: 18,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: C.border,
+    shadowColor: C.cardShadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 4,
   },
   stat: { flex: 1, alignItems: 'center', gap: 5 },
-  statValue: { color: C.white, fontSize: 20, fontWeight: '800' },
+  statValue: { color: C.text, fontSize: 20, fontFamily: FONTS.extrabold },
   statLabel: {
-    color: C.gray,
+    color: C.textMuted,
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: FONTS.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  statDivider: { width: 1, backgroundColor: '#2A2A2A', marginVertical: 4 },
+  statDivider: { width: 1, backgroundColor: C.border, marginVertical: 4 },
   tcgEmojis: { flexDirection: 'row', gap: 2 },
   tcgEmoji: { fontSize: 16 },
 
-  /* TCG underline tabs */
-  tcgTabsWrap: { marginBottom: 0 },
-  tcgTabs: {
+  /* TCG selector pills */
+  tcgPillsWrap: { marginBottom: 22 },
+  tcgPillsRow: { paddingHorizontal: 20, gap: 10 },
+  tcgPill: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 28,
-  },
-  tcgTab: {
     alignItems: 'center',
-    paddingTop: 4,
-    paddingBottom: 0,
+    gap: 7,
+    backgroundColor: C.surface2,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: C.border,
   },
-  tcgTabText: {
-    color: C.gray,
-    fontSize: 15,
-    fontWeight: '600',
-    paddingBottom: 12,
+  tcgPillActive: { backgroundColor: C.primary, borderColor: C.primary },
+  tcgPillEmoji: { fontSize: 15 },
+  tcgPillText: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
+  tcgPillTextActive: { color: '#FFFFFF', fontFamily: FONTS.bold },
+
+  /* Spielerlevel card */
+  levelCard: {
+    backgroundColor: C.surface,
+    borderRadius: 20,
+    marginHorizontal: 20,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    shadowColor: C.cardShadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 4,
+    gap: 12,
   },
-  tcgTabTextActive: {
-    color: C.white,
-    fontWeight: '700',
+  levelCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cardEyebrow: {
+    color: C.textMuted,
+    fontSize: 11,
+    fontFamily: FONTS.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  tcgTabLine: {
-    height: 2,
-    alignSelf: 'stretch',
-    backgroundColor: 'transparent',
-    borderRadius: 1,
+  levelBadge: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  levelBadgeDiamond: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    backgroundColor: C.primaryGlow,
+    transform: [{ rotate: '45deg' }],
   },
-  tcgTabLineActive: {
-    backgroundColor: C.red,
+  levelBadgeWingL: {
+    position: 'absolute',
+    left: -3,
+    width: 16,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: C.primaryLight,
+    opacity: 0.45,
+    transform: [{ rotate: '-30deg' }],
   },
-  tabsDivider: {
-    height: 1,
-    backgroundColor: '#222222',
-    marginTop: 0,
+  levelBadgeWingR: {
+    position: 'absolute',
+    right: -3,
+    width: 16,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: C.primaryLight,
+    opacity: 0.45,
+    transform: [{ rotate: '30deg' }],
   },
+  levelBadgeGlyph: { color: C.primary, fontSize: 16 },
+  levelValueRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  levelValue: { color: C.text, fontSize: 22, fontFamily: FONTS.extrabold },
+  levelXpText: { color: C.textMuted, fontSize: 12.5, fontFamily: FONTS.semibold },
+  xpTrack: { height: 8, borderRadius: 4, backgroundColor: C.surface3, overflow: 'hidden' },
+  xpFill: { height: '100%', borderRadius: 4, backgroundColor: C.primary },
+
+  engagementRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  engagementItem: { alignItems: 'center', gap: 3, flex: 1 },
+  engagementIcon: { fontSize: 16 },
+  engagementValue: { color: C.text, fontSize: 15, fontFamily: FONTS.extrabold },
+  engagementLabel: { color: C.textMuted, fontSize: 9.5, fontFamily: FONTS.semibold, textAlign: 'center' },
+
+  /* Seit-Beginn card */
+  sinceCard: {
+    backgroundColor: C.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 24,
+    gap: 10,
+  },
+  sinceTitle: { color: C.text, fontSize: 13.5, fontFamily: FONTS.bold },
+
+  /* Activity feed */
+  activitySection: { marginBottom: 12 },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 14,
+  },
+  activityIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: C.primaryGlow,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityIcon: { fontSize: 18 },
+  activityTitle: { color: C.text, fontSize: 13.5, fontFamily: FONTS.medium },
+  activityHighlight: { color: C.primary, fontFamily: FONTS.bold },
+  activityMeta: { color: C.textMuted, fontSize: 12, marginTop: 2 },
 
   /* TCG content */
   tcgContent: {
@@ -572,16 +900,16 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: C.surface3,
   },
   skillSegEditable: {
     height: 8,
     borderRadius: 4,
   },
   skillNum: {
-    color: C.gray,
+    color: C.textMuted,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: FONTS.semibold,
     marginLeft: 6,
     width: 30,
   },
@@ -596,43 +924,43 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     borderWidth: 1,
-    borderColor: '#2A2A2A',
-    borderRadius: 8,
+    borderColor: C.border,
+    borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  editBtnText: { color: C.gray, fontSize: 13, fontWeight: '600' },
-  cancelText: { color: C.gray, fontSize: 13 },
+  editBtnText: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
+  cancelText: { color: C.textMuted, fontSize: 13 },
   saveBtn: {
-    backgroundColor: C.red,
+    backgroundColor: C.primary,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 8,
     minWidth: 90,
     alignItems: 'center',
   },
-  saveBtnText: { color: C.white, fontSize: 13, fontWeight: '700' },
+  saveBtnText: { color: C.text, fontSize: 13, fontFamily: FONTS.bold },
 
   /* Fields */
   fieldBlock: { marginBottom: 22 },
   fieldLabel: {
-    color: C.gray,
+    color: C.textMuted,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 8,
   },
-  fieldValue: { color: C.white, fontSize: 15 },
-  fieldEmpty: { color: C.dim, fontSize: 15 },
+  fieldValue: { color: C.text, fontSize: 15 },
+  fieldEmpty: { color: C.textDim, fontSize: 15 },
   fieldInput: {
     backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
-    borderRadius: 10,
+    borderColor: C.border,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: C.white,
+    color: C.text,
     fontSize: 15,
   },
   multilineInput: { minHeight: 100, textAlignVertical: 'top' },
@@ -650,10 +978,10 @@ const styles = StyleSheet.create({
     minWidth: 52,
   },
   manaBtnActive: {
-    borderColor: '#FFFFFF',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: C.primary,
+    backgroundColor: C.primaryGlow,
   },
-  manaLabel: { color: C.gray, fontSize: 10, fontWeight: '600' },
+  manaLabel: { color: C.textMuted, fontSize: 10, fontFamily: FONTS.semibold },
 
   /* Play style */
   styleRow: { flexDirection: 'row', gap: 8 },
@@ -661,37 +989,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
-    borderRadius: 10,
+    borderColor: C.border,
+    borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
   },
-  styleBtnActive: { backgroundColor: '#D4384A', borderColor: '#D4384A' },
-  styleBtnText: { color: C.gray, fontSize: 14, fontWeight: '600' },
-  styleBtnTextActive: { color: C.white },
+  styleBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+  styleBtnText: { color: C.textMuted, fontSize: 14, fontFamily: FONTS.semibold },
+  styleBtnTextActive: { color: C.text },
 
-  /* Card picker */
-  cardRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 10 },
-  cardItem: { alignItems: 'center', gap: 6, width: 100 },
-  cardPreview: {
-    width: 100,
-    height: 140,
-    borderRadius: 8,
-    backgroundColor: C.surface,
+  /* Decks */
+  decksSection: { marginBottom: 28 },
+  decksHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  cardName: {
-    color: C.gray,
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
+  viewAllText: { color: C.primary, fontSize: 13, fontFamily: FONTS.bold },
+  deckRow: { gap: 14, paddingRight: 4 },
+  viewAllDecksBtn: {
+    alignSelf: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: C.surface2,
   },
-  pickCardBtn: {
-    borderWidth: 1,
-    borderColor: C.red,
-    borderRadius: 10,
+  viewAllDecksText: { color: C.text, fontSize: 13, fontFamily: FONTS.semibold },
+  importDeckBtn: {
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 20,
     alignSelf: 'flex-start',
+    marginTop: 14,
   },
-  pickCardText: { color: C.red, fontSize: 14, fontWeight: '700' },
-});
+  importDeckText: { color: C.primary, fontSize: 14, fontFamily: FONTS.bold },
+  });
+}

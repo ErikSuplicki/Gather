@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,12 +15,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-import { COLORS, SPACING } from '@/constants/theme';
+import { FONTS, SPACING, ThemeColors } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar } from '@/lib/auth';
+import { showAlert } from '@/lib/alert';
 
 export default function NameScreen() {
+  const { colors: C } = useTheme();
+  const styles = useMemo(() => makeStyles(C), [C]);
   const {
     selectedTCGs,
     region,
@@ -41,7 +44,7 @@ export default function NameScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Berechtigung benötigt', 'Wir brauchen Zugriff auf deine Fotos.');
+      showAlert('Berechtigung benötigt', 'Wir brauchen Zugriff auf deine Fotos.');
       return;
     }
 
@@ -61,7 +64,7 @@ export default function NameScreen() {
 
   const finish = async () => {
     if (!username.trim()) {
-      Alert.alert('Name fehlt', 'Bitte gib einen Anzeigenamen ein.');
+      showAlert('Name fehlt', 'Bitte gib einen Anzeigenamen ein.');
       return;
     }
 
@@ -104,7 +107,7 @@ export default function NameScreen() {
 
       router.replace('/(tabs)');
     } catch (err: unknown) {
-      Alert.alert('Fehler', (err as Error).message ?? 'Speichern fehlgeschlagen.');
+      showAlert('Fehler', (err as Error).message ?? 'Speichern fehlgeschlagen.');
     } finally {
       setSaving(false);
     }
@@ -148,7 +151,7 @@ export default function NameScreen() {
             <TextInput
               style={styles.input}
               placeholder="z.B. DerMagier"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={C.textMuted}
               value={username}
               onChangeText={setUsername}
               maxLength={24}
@@ -178,14 +181,15 @@ export default function NameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+function makeStyles(C: ThemeColors) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
   flex: { flex: 1 },
   content: { padding: SPACING.lg, alignItems: 'center', paddingBottom: SPACING.xl },
   header: { width: '100%', marginBottom: SPACING.xl },
-  step: { color: COLORS.primary, fontSize: 11, fontWeight: '800', letterSpacing: 2, marginBottom: SPACING.sm },
-  title: { color: COLORS.text, fontSize: 30, fontWeight: '800', marginBottom: SPACING.sm },
-  subtitle: { color: COLORS.textMuted, fontSize: 15 },
+  step: { color: C.primary, fontSize: 11, fontFamily: FONTS.extrabold, letterSpacing: 2, marginBottom: SPACING.sm },
+  title: { color: C.text, fontSize: 30, fontFamily: FONTS.extrabold, marginBottom: SPACING.sm },
+  subtitle: { color: C.textMuted, fontSize: 15 },
   avatarContainer: {
     position: 'relative',
     marginBottom: SPACING.xl,
@@ -195,62 +199,63 @@ const styles = StyleSheet.create({
     height: 130,
     borderRadius: 65,
     borderWidth: 3,
-    borderColor: COLORS.primary,
+    borderColor: C.primary,
   },
   avatarPlaceholder: {
     width: 130,
     height: 130,
     borderRadius: 65,
-    backgroundColor: COLORS.surface2,
+    backgroundColor: C.surface2,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.xs,
   },
   avatarIcon: { fontSize: 36 },
-  avatarHint: { color: COLORS.textMuted, fontSize: 11, textAlign: 'center', lineHeight: 16 },
+  avatarHint: { color: C.textMuted, fontSize: 11, textAlign: 'center', lineHeight: 16 },
   editOverlay: {
     position: 'absolute',
     bottom: 4,
     right: 4,
-    backgroundColor: COLORS.primary,
+    backgroundColor: C.primary,
     borderRadius: 14,
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: COLORS.bg,
+    borderColor: C.bg,
   },
   editOverlayText: { color: '#fff', fontSize: 13 },
   inputSection: { width: '100%', gap: SPACING.sm },
-  label: { color: COLORS.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  label: { color: C.textMuted, fontSize: 12, fontFamily: FONTS.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: {
-    backgroundColor: COLORS.surface2,
+    backgroundColor: C.surface2,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: C.border,
     borderRadius: 14,
     paddingHorizontal: SPACING.md,
     paddingVertical: 15,
-    color: COLORS.text,
+    color: C.text,
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: FONTS.semibold,
   },
-  hint: { color: COLORS.textMuted, fontSize: 12 },
+  hint: { color: C.textMuted, fontSize: 12 },
   footer: {
     padding: SPACING.lg,
     paddingBottom: SPACING.xl,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: C.border,
   },
   finishBtn: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: C.primary,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
   },
   disabled: { opacity: 0.35 },
-  finishBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-});
+  finishBtnText: { color: '#fff', fontSize: 17, fontFamily: FONTS.bold },
+  });
+}

@@ -13,22 +13,40 @@ const Circle = S('circle');
 
 // ─── Nav bar icons ───────────────────────────────────────────────────────────
 
-export function CompassIcon({ color, size }: { color: string; size: number }) {
+interface NavIconProps { color: string; size: number; active?: boolean }
+
+export function CompassIcon({ color, size, active }: NavIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.8" />
-      <Path d="M12 5.5L14 12L12 10.5L10 12Z" fill={color} />
-      <Path d="M12 18.5L10 12L12 13.5L14 12Z" fill={color} opacity="0.3" />
-      <Circle cx="12" cy="12" r="1.4" fill={color} />
+      <Circle
+        cx="12" cy="12" r="8.5"
+        stroke={color}
+        strokeWidth={active ? 2.2 : 1.6}
+        fill={active ? color : 'none'}
+        fillOpacity={active ? 0.14 : 0}
+      />
+      <Path d="M14.8 9.2L12.9 12.9L9.2 14.8L11.1 11.1L14.8 9.2Z" fill={color} />
     </Svg>
   );
 }
 
-export function PersonIcon({ color, size }: { color: string; size: number }) {
+export function PersonIcon({ color, size, active }: NavIconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-      <Circle cx="12" cy="8" r="4" />
-      <Path d="M4 21C4 17 7.6 14 12 14C16.4 14 20 17 20 21" />
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle
+        cx="12" cy="8.2" r="3.6"
+        stroke={color}
+        strokeWidth={active ? 0 : 1.8}
+        fill={active ? color : 'none'}
+      />
+      <Path
+        d="M4.5 20C4.8 16.2 8 13.6 12 13.6C16 13.6 19.2 16.2 19.5 20"
+        stroke={color}
+        strokeWidth={active ? 0 : 1.8}
+        fill={active ? color : 'none'}
+        fillOpacity={active ? 1 : 0}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
