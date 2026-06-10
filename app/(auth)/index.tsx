@@ -3,18 +3,18 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import { FONTS, SPACING, ThemeColors } from '@/constants/theme';
+import { FONTS, SPACING, ThemeColors, ELEVATION } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithApple } from '@/lib/auth';
 import { showAlert } from '@/lib/alert';
@@ -27,10 +27,12 @@ export default function AuthScreen() {
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
 
-  const [mode, setMode] = useState<Mode>('signin');
-  const [email, setEmail] = useState('');
+  const [mode, setMode]       = useState<Mode>('signin');
+  const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [pwFocused, setPwFocused]       = useState(false);
 
   const withLoading = async (fn: () => Promise<{ error: Error | null | undefined }>) => {
     setLoading(true);
@@ -56,14 +58,7 @@ export default function AuthScreen() {
 
   return (
     <View style={styles.root}>
-      {/* ── Hero gradient (Luma-inspired) ── */}
-      <LinearGradient
-        colors={['#1E0A3C', '#120824', C.bg]}
-        locations={[0, 0.55, 1]}
-        style={styles.heroBg}
-      />
-
-      {/* Glow orb */}
+      {/* Deep-blue glow orb — DS-aligned (brand glow, not purple) */}
       <View style={styles.glowOrb} />
 
       <SafeAreaView style={styles.safe}>
@@ -76,66 +71,73 @@ export default function AuthScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* ── Hero section ── */}
+            {/* Hero */}
             <View style={styles.hero}>
-              <Text style={styles.logoEmoji}>🃏</Text>
+              <Image
+                source={require('../../assets/images/Logo_NoBorder.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.appName}>GATHER</Text>
               <Text style={styles.tagline}>Finde Mitspieler in deiner Nähe</Text>
             </View>
 
-            {/* ── Form card ── */}
+            {/* DS Card */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>
                 {mode === 'signin' ? 'Willkommen zurück' : 'Konto erstellen'}
               </Text>
 
               <View style={styles.inputs}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="E-Mail"
-                  placeholderTextColor={C.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!loading}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Passwort"
-                  placeholderTextColor={C.textMuted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  editable={!loading}
-                />
+                <View style={[styles.inputWrap, emailFocused && styles.inputWrapFocused]}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="E-Mail"
+                    placeholderTextColor={C.textFaint}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                  />
+                </View>
+                <View style={[styles.inputWrap, pwFocused && styles.inputWrapFocused]}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Passwort"
+                    placeholderTextColor={C.textFaint}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    editable={!loading}
+                    onFocus={() => setPwFocused(true)}
+                    onBlur={() => setPwFocused(false)}
+                  />
+                </View>
               </View>
 
-              {/* Primary gradient button */}
-              <TouchableOpacity
+              {/* DS ButtonPrimary (lg) */}
+              <Pressable
                 onPress={handleEmail}
                 disabled={loading}
-                activeOpacity={0.85}
-                style={styles.primaryBtnWrap}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  pressed && styles.primaryBtnPressed,
+                  loading && styles.primaryBtnDisabled,
+                ]}
               >
-                <LinearGradient
-                  colors={loading ? [C.surface3, C.surface3] : ['#9333EA', '#6D28D9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.primaryBtn}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.primaryBtnText}>
+                {loading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.primaryBtnText}>
                       {mode === 'signin' ? 'Anmelden' : 'Registrieren'}
                     </Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
+                }
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
                 disabled={loading}
               >
@@ -144,38 +146,36 @@ export default function AuthScreen() {
                     ? 'Noch kein Konto? Registrieren'
                     : 'Bereits registriert? Anmelden'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
-            {/* ── Divider ── */}
+            {/* DS Divider (labeled) */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>oder</Text>
+              <Text style={styles.dividerLabel}>oder</Text>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* ── Social buttons ── */}
+            {/* DS ButtonSecondary social buttons */}
             <View style={styles.social}>
-              <TouchableOpacity
-                style={[styles.socialBtn, loading && styles.disabled]}
+              <Pressable
+                style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed, loading && styles.disabled]}
                 onPress={() => withLoading(signInWithGoogle)}
                 disabled={loading}
-                activeOpacity={0.8}
               >
                 <Text style={styles.socialIcon}>🌐</Text>
                 <Text style={styles.socialBtnText}>Mit Google fortfahren</Text>
-              </TouchableOpacity>
+              </Pressable>
 
               {Platform.OS === 'ios' && (
-                <TouchableOpacity
-                  style={[styles.socialBtn, loading && styles.disabled]}
+                <Pressable
+                  style={({ pressed }) => [styles.socialBtn, pressed && styles.socialBtnPressed, loading && styles.disabled]}
                   onPress={() => withLoading(signInWithApple)}
                   disabled={loading}
-                  activeOpacity={0.8}
                 >
                   <Text style={styles.socialIcon}>🍎</Text>
                   <Text style={styles.socialBtnText}>Mit Apple fortfahren</Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
           </ScrollView>
@@ -188,124 +188,152 @@ export default function AuthScreen() {
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
-  heroBg: { ...StyleSheet.absoluteFill },
+
+  // Brand glow orb — blue, subtler than the old purple
   glowOrb: {
-    position: 'absolute',
-    top: SCREEN_HEIGHT * 0.06,
-    alignSelf: 'center',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(124,58,237,0.18)',
-    // iOS shadow as glow
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 60,
+    position:      'absolute',
+    top:           SCREEN_HEIGHT * 0.02,
+    alignSelf:     'center',
+    width:         240,
+    height:        240,
+    borderRadius:  120,
+    backgroundColor: 'transparent',
+    shadowColor:   '#168BFF',
+    shadowOffset:  { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius:  80,
   },
+
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, padding: SPACING.lg, paddingTop: 0 },
+  scroll: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: SPACING.xl },
 
   /* Hero */
   hero: {
-    alignItems: 'center',
-    paddingTop: SCREEN_HEIGHT * 0.07,
-    paddingBottom: SPACING.xxl,
+    alignItems:  'center',
+    paddingTop:  SCREEN_HEIGHT * 0.06,
+    paddingBottom: 40,
+    gap:         16,
   },
-  logoEmoji: { fontSize: 80, marginBottom: SPACING.sm },
+  logoImage: {
+    width:  96,
+    height: 96,
+  },
   appName: {
-    fontSize: 42,
-    fontFamily: FONTS.black,
-    color: C.text,
-    letterSpacing: 10,
-    marginBottom: SPACING.sm,
+    fontSize:      28,
+    fontFamily:    FONTS.bold,
+    color:         C.text,
+    letterSpacing: 8,
   },
   tagline: {
-    fontSize: 15,
+    fontSize:   14,
     fontFamily: FONTS.regular,
-    color: C.textMuted,
-    textAlign: 'center',
-    letterSpacing: 0.3,
+    color:      C.textMuted,
+    textAlign:  'center',
+    letterSpacing: 0,
   },
 
-  /* Card */
+  /* DS Card */
   card: {
     backgroundColor: C.surface,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: SPACING.lg,
-    gap: SPACING.md,
-    // shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
+    borderRadius:    16,
+    borderWidth:     1,
+    borderColor:     C.border,
+    padding:         16,
+    gap:             12,
+    ...ELEVATION.panel,
   },
   cardTitle: {
-    color: C.text,
-    fontSize: 20,
-    fontFamily: FONTS.bold,
-    marginBottom: SPACING.xs,
+    color:         C.text,
+    fontSize:      18,
+    fontFamily:    FONTS.semibold,
+    letterSpacing: -0.18,
   },
-  inputs: { gap: SPACING.sm },
+  inputs: { gap: 8 },
+
+  // DS TextInput
+  inputWrap: {
+    borderWidth:  1,
+    borderColor:  C.border,
+    borderRadius: 10,
+  },
+  inputWrapFocused: {
+    borderColor:   C.borderFocus,
+    shadowColor:   C.borderFocus,
+    shadowOffset:  { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius:  3,
+  },
   input: {
-    backgroundColor: C.surface2,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 14,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 14,
-    color: C.text,
-    fontFamily: FONTS.regular,
-    fontSize: 16,
-  },
-  primaryBtnWrap: { borderRadius: 14, overflow: 'hidden' },
-  primaryBtn: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderRadius: 14,
-  },
-  disabled: { opacity: 0.5 },
-  primaryBtnText: { color: '#fff', fontSize: 16, fontFamily: FONTS.bold, letterSpacing: 0.3 },
-  toggleText: {
-    color: C.primaryLight,
-    textAlign: 'center',
-    fontSize: 14,
-    fontFamily: FONTS.medium,
-    paddingVertical: SPACING.xs,
+    height:            42,
+    backgroundColor:   C.surface2,
+    borderRadius:      10,
+    paddingHorizontal: 12,
+    color:             C.text,
+    fontFamily:        FONTS.regular,
+    fontSize:          14,
   },
 
-  /* Divider */
+  // DS ButtonPrimary (lg)
+  primaryBtn: {
+    height:            48,
+    backgroundColor:   C.primary,
+    paddingHorizontal: 24,
+    borderRadius:      12,
+    alignItems:        'center',
+    justifyContent:    'center',
+    shadowColor:       C.primary,
+    shadowOffset:      { width: 0, height: 0 },
+    shadowOpacity:     0.35,
+    shadowRadius:      8,
+  },
+  primaryBtnPressed:  { backgroundColor: C.primaryDeep },
+  primaryBtnDisabled: { opacity: 0.38 },
+  primaryBtnText: {
+    color:       '#FFFFFF',
+    fontFamily:  FONTS.semibold,
+    fontSize:    15,
+    letterSpacing: 0,
+  },
+
+  toggleText: {
+    color:      C.primaryBright,
+    textAlign:  'center',
+    fontSize:   14,
+    fontFamily: FONTS.medium,
+  },
+
+  /* DS Divider (labeled) */
   divider: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: SPACING.lg,
+    alignItems:    'center',
+    marginVertical: 16,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
-  dividerText: {
-    color: C.textMuted,
-    marginHorizontal: SPACING.md,
-    fontSize: 13,
-    fontFamily: FONTS.medium,
+  dividerLine:  { flex: 1, height: 1, backgroundColor: C.border },
+  dividerLabel: {
+    color:           C.textFaint,
+    marginHorizontal: 12,
+    fontSize:         11,
+    fontFamily:       FONTS.semibold,
+    letterSpacing:    0.11,
   },
 
-  /* Social */
-  social: { gap: SPACING.sm, paddingBottom: SPACING.xl },
+  /* DS ButtonSecondary social */
+  social: { gap: 8 },
   socialBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 14,
-    paddingVertical: 14,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               8,
+    height:            48,
+    backgroundColor:   C.surface3,
+    borderWidth:       1,
+    borderColor:       C.borderDefault,
+    borderRadius:      12,
   },
-  socialIcon: { fontSize: 18 },
-  socialBtnText: { color: C.text, fontSize: 15, fontFamily: FONTS.semibold },
+  socialBtnPressed: { backgroundColor: C.surfacePressed, borderColor: C.borderStrong },
+  socialIcon:    { fontSize: 18 },
+  socialBtnText: { color: C.text, fontSize: 14, fontFamily: FONTS.semibold },
+  disabled:      { opacity: 0.38 },
   });
 }

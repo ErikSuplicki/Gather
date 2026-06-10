@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   Image,
   Modal,
   StyleSheet,
@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONTS, ThemeColors } from '@/constants/theme';
+import { FONTS, ThemeColors, ELEVATION } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { DeckCard, TCGInfo, UserDeck } from '@/types';
@@ -82,11 +82,10 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
     hasImages ? (
       <View style={styles.grid}>
         {entries.map(({ c, i }) => (
-          <TouchableOpacity
+          <Pressable
             key={`${keyPrefix}-${c.name}-${i}`}
-            style={[styles.cardWrap, { width: CARD_W }, c.isCommander && styles.commanderWrap]}
+            style={({ pressed }) => [styles.cardWrap, { width: CARD_W }, c.isCommander && styles.commanderWrap, pressed && { opacity: 0.88 }]}
             onPress={() => setInfoCard(c)}
-            activeOpacity={0.8}
           >
             {c.image ? (
               <Image source={{ uri: c.image }} style={[styles.cardImg, { height: CARD_H }]} resizeMode="cover" />
@@ -104,16 +103,15 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
               </View>
             )}
             {!!editing && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => removeCard(i)}
-                style={styles.removeTag}
+                style={({ pressed }) => [styles.removeTag, pressed && { opacity: 0.75 }]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.75}
               >
                 <Text style={styles.removeTagText}>−</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </View>
     ) : (
@@ -124,14 +122,13 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
               {c.quantity}× {c.name}{c.isCommander ? '  ★ Commander' : ''}
             </Text>
             {!!editing && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => removeCard(i)}
-                style={styles.removeTagInline}
+                style={({ pressed }) => [styles.removeTagInline, pressed && { opacity: 0.75 }]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.75}
               >
                 <Text style={styles.removeTagText}>−</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         ))}
@@ -151,18 +148,24 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
           {/* Header */}
           <View style={styles.header}>
             {selectedDeck ? (
-              <TouchableOpacity onPress={() => setSelectedDeck(null)} style={styles.backBtn}>
+              <Pressable
+                onPress={() => setSelectedDeck(null)}
+                style={({ pressed }) => [styles.backBtn, pressed && styles.iconBtnPressed]}
+              >
                 <Text style={styles.backText}>‹</Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : (
-              <View style={{ width: 34 }} />
+              <View style={{ width: 36 }} />
             )}
             <Text style={styles.title} numberOfLines={1}>
               {selectedDeck ? selectedDeck.name : 'Alle Decks'}
             </Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+            <Pressable
+              onPress={handleClose}
+              style={({ pressed }) => [styles.closeBtn, pressed && styles.iconBtnPressed]}
+            >
               <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {selectedDeck ? (() => {
@@ -199,16 +202,15 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
                     </View>
                   )}
 
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => setShowReasoning(v => !v)}
-                    activeOpacity={0.7}
-                    style={styles.reasoningToggle}
+                    style={({ pressed }) => [styles.reasoningToggle, pressed && { opacity: 0.75 }]}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   >
                     <Text style={styles.reasoningToggleText}>
                       {showReasoning ? 'Grund verbergen ▲' : 'Grund anzeigen ▼'}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
 
                   {showReasoning && (
                     <>
@@ -229,7 +231,7 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
                       )}
 
                       <Text style={styles.powerLevelNote}>
-                        Automatische Schätzung anhand bekannter Power-Karten (WotC „Commander Brackets“ &amp; r/EDH-Communityskala) — keine offizielle Einstufung. „Mindestens" markiert die laut harten Anforderungen erlaubte Bracket-Untergrenze, „Empfohlen" bezieht zusätzlich die Gesamt-Power-Signale ein und kann höher, aber nie niedriger als das Minimum ausfallen.
+                        Automatische Schätzung anhand bekannter Power-Karten (WotC „Commander Brackets" &amp; r/EDH-Communityskala) — keine offizielle Einstufung. „Mindestens" markiert die laut harten Anforderungen erlaubte Bracket-Untergrenze, „Empfohlen" bezieht zusätzlich die Gesamt-Power-Signale ein und kann höher, aber nie niedriger als das Minimum ausfallen.
                       </Text>
                     </>
                   )}
@@ -254,14 +256,13 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
                 <View style={styles.filterWrap}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
                     {[ALL_FILTER, ...formats].map(f => (
-                      <TouchableOpacity
+                      <Pressable
                         key={f}
-                        style={[styles.filterPill, filter === f && styles.filterPillActive]}
+                        style={({ pressed }) => [styles.filterPill, filter === f && styles.filterPillActive, pressed && filter !== f && styles.filterPillPressed]}
                         onPress={() => setFilter(f)}
-                        activeOpacity={0.75}
                       >
                         <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{f}</Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     ))}
                   </ScrollView>
                 </View>
@@ -269,9 +270,12 @@ export function DeckBrowserModal({ visible, onClose, decks, tcgInfo, initialDeck
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
                 {!!onImportDeck && (
-                  <TouchableOpacity style={styles.importBtn} onPress={onImportDeck} activeOpacity={0.85}>
+                  <Pressable
+                    style={({ pressed }) => [styles.importBtn, pressed && styles.importBtnPressed]}
+                    onPress={onImportDeck}
+                  >
                     <Text style={styles.importBtnText}>+ Deck importieren</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
 
                 {filtered.length === 0 ? (
@@ -320,34 +324,40 @@ function makeStyles(C: ThemeColors) {
     gap: 12,
   },
   backBtn: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 36, height: 36, borderRadius: 10,
     backgroundColor: C.surface2,
+    borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
   backText: { color: C.textMuted, fontSize: 20, fontFamily: FONTS.bold, marginTop: -2 },
-  title: { flex: 1, color: C.text, fontSize: 20, fontFamily: FONTS.extrabold },
   closeBtn: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 36, height: 36, borderRadius: 10,
     backgroundColor: C.surface2,
+    borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
   closeText: { color: C.textMuted, fontSize: 14, fontFamily: FONTS.bold },
+  iconBtnPressed: { backgroundColor: C.surface3 },
+  title: { flex: 1, color: C.text, fontSize: 20, fontFamily: FONTS.bold },
 
   filterWrap: { marginBottom: 4 },
   filterRow: { paddingHorizontal: 20, gap: 8 },
   filterPill: {
+    height: 32,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 18,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterPillActive: { backgroundColor: C.primary, borderColor: C.primary },
+  filterPillPressed: { backgroundColor: C.surface2 },
   filterText: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
-  filterTextActive: { color: C.text },
+  filterTextActive: { color: '#FFFFFF' },
 
   body: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
-  emptyText: { color: C.textDim, textAlign: 'center', padding: 48, fontSize: 15 },
+  emptyText: { color: C.textFaint, textAlign: 'center', padding: 48, fontSize: 15 },
 
   importBtn: {
     borderWidth: 1.5,
@@ -358,7 +368,8 @@ function makeStyles(C: ThemeColors) {
     justifyContent: 'center',
     marginBottom: 20,
   },
-  importBtnText: { color: C.primary, fontSize: 16, fontFamily: FONTS.extrabold },
+  importBtnPressed: { backgroundColor: C.primaryTint },
+  importBtnText: { color: C.primary, fontSize: 16, fontFamily: FONTS.bold },
 
   tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
 
@@ -367,22 +378,23 @@ function makeStyles(C: ThemeColors) {
   powerLevelCard: {
     backgroundColor: C.surface,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 14,
     marginBottom: 20,
     gap: 8,
+    ...ELEVATION.panel,
   },
   powerLevelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
   bracketBadge: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-  bracketBadgeText: { fontSize: 13, fontFamily: FONTS.extrabold },
+  bracketBadgeText: { fontSize: 13, fontFamily: FONTS.bold },
   powerLevelEstimate: { color: C.textMuted, fontSize: 12, fontFamily: FONTS.semibold },
   minBracketPill: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start' },
   minBracketPillText: { fontSize: 11.5, fontFamily: FONTS.semibold },
   reasoningToggle: { alignSelf: 'flex-start' },
   reasoningToggleText: { color: C.primary, fontSize: 12, fontFamily: FONTS.bold },
-  powerLevelSectionLabel: { color: C.textDim, fontSize: 10.5, fontFamily: FONTS.bold, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
+  powerLevelSectionLabel: { color: C.textFaint, fontSize: 10.5, fontFamily: FONTS.bold, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
   powerLevelReason: { color: C.textMuted, fontSize: 12.5, lineHeight: 18 },
-  powerLevelNote: { color: C.textDim, fontSize: 11, lineHeight: 16, fontStyle: 'italic', marginTop: 2 },
+  powerLevelNote: { color: C.textFaint, fontSize: 11, lineHeight: 16, fontStyle: 'italic', marginTop: 2 },
 
   sectionLabel: {
     color: C.textMuted,
@@ -407,7 +419,7 @@ function makeStyles(C: ThemeColors) {
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  qtyText: { color: '#FFFFFF', fontSize: 11, fontFamily: FONTS.extrabold },
+  qtyText: { color: '#FFFFFF', fontSize: 11, fontFamily: FONTS.bold },
   commanderTag: {
     position: 'absolute', top: 7, left: 7,
     backgroundColor: '#F0C75E',
@@ -415,7 +427,7 @@ function makeStyles(C: ThemeColors) {
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  commanderTagText: { color: '#1A1300', fontSize: 9, fontFamily: FONTS.black },
+  commanderTagText: { color: '#1A1300', fontSize: 9, fontFamily: FONTS.bold },
   removeTag: {
     position: 'absolute', top: 5, right: 5,
     width: 22, height: 22, borderRadius: 11,
@@ -427,7 +439,7 @@ function makeStyles(C: ThemeColors) {
     backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  removeTagText: { color: '#FFFFFF', fontSize: 15, fontFamily: FONTS.black, marginTop: -1 },
+  removeTagText: { color: '#FFFFFF', fontSize: 15, fontFamily: FONTS.bold, marginTop: -1 },
 
   textList: { gap: 6 },
   textListRowWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },

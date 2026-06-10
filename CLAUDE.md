@@ -33,73 +33,100 @@ To test on a physical phone via Expo Go, start a second instance on a different 
   - `false` → redirect to `/(onboarding)/tcgs`
   - `true` → redirect to `/(tabs)`
 
-`supabase.auth.onAuthStateChange` drives all navigation — sign-out triggers it automatically. Provider nesting is `<ThemeProvider><OnboardingProvider><Stack/></OnboardingProvider></ThemeProvider>` — theme wraps everything (incl. pre-login auth/onboarding screens), onboarding state only matters post-login.
+`supabase.auth.onAuthStateChange` drives all navigation — sign-out triggers it automatically. Provider nesting is `<ThemeProvider><OnboardingProvider><Stack/></OnboardingProvider></ThemeProvider>`.
 
 ### Route Groups
 
-| Group | Path | Purpose |
-|---|---|---|
-| `(auth)` | `/` | Email/password + Google/Apple OAuth login screen |
-| `(onboarding)` | `/tcgs → /region → /skill → /name` | 4-step onboarding wizard |
-| `(tabs)` | `/` | Main app: Entdecken (discover) + Profil, rendered through a custom pill-shaped `CustomTabBar` (in `(tabs)/_layout.tsx`, icons from `components/icons.tsx`) |
+| Route | Purpose |
+|---|---|
+| `(auth)` | Email/password login screen |
+| `(onboarding)/tcgs → /region → /skill → /name` | 4-step onboarding wizard |
+| `(tabs)` | Main app: Entdecken + Profil tabs, custom pill `CustomTabBar` in `(tabs)/_layout.tsx` |
+| `profile/[id]` | Read-only public profile view for any user (no edit controls) |
+
+### Discover (Entdecken) Screen — `app/(tabs)/index.tsx`
+
+The Entdecken tab is a full-screen map with a search overlay and a draggable bottom sheet (~1100 lines, single file). Key pieces:
+
+- **Player search** queries `public.profiles` joined with `user_tcgs` via Supabase `.ilike('username', '%query%')`. Results are tappable player cards; tapping navigates to `app/profile/[id].tsx` (or to the Profil tab if the result is the logged-in user). Search always runs over the full unfiltered data — it is **not** affected by the map filters below.
+- **Dual map rendering** — Leaflet is wired differently per platform:
+  - Native: `buildMapHtml(centerLat, centerLng, events)` returns a full HTML document (Leaflet from CDN + CSS + marker/popup JS) loaded into a `react-native-webview` `<WebView>`. Marker taps `postMessage` `{type:'selectEvent', id}` back to RN via `onMessage`.
+  - Web (`Platform.OS === 'web'`): a direct-DOM Leaflet init in a `useEffect`, targeting a plain `<div ref={setWebMapEl}>`. Marker taps call `window.__gatherSelectEvent(id)` directly.
+  - Both paths render markers as TCG-logo `divIcon`s via `getTcgIconUri()`, falling back to the `abbr` text badge for TCGs without a logo asset. `getTcgIconUri` handles react-native-web's asset-resolution quirks (string / `{uri}` / native-module source forms — `Image.resolveAssetSource` is native-only).
+- **`PLACEHOLDER_EVENTS`** — static demo event data (no `user_events` table yet). Each event stores `latOffset`/`lngOffset` *relative to the signed-in user's profile location* (`centerLat`/`centerLng`, from `currentProfile.latitude/longitude`, default Hamburg) so events always appear "nearby" regardless of the user's actual region. `bracket: CommanderBracket | null` is set for MTG Commander events.
+- **Filter bar** below the search bar: TCG pills (`TCG_LIST`), Commander bracket pills B1–B5 (`BRACKET_COLORS`), date pills, and a custom `RadiusSlider` (10–200km, `PanResponder`-based drag, ref-mirrored values to avoid stale closures). These filters compute `visibleEvents` (via the `distanceKm` haversine helper), which drives **only** the map markers and the "Events in deiner Nähe" bottom-sheet list.
+- **Bottom sheet**: `Animated.Value` + `PanResponder` with three snap points (expanded / collapsed / peek), computed from measured layout heights (`onLayout` on the container/header/handle/players-row) rather than hardcoded screen-height math.
+
+`app/profile/[id].tsx` fetches `profiles`, `user_tcgs`, `user_tcg_details`, and `user_decks` for the target user ID (from `useLocalSearchParams`). Renders the same visual layout as the own-profile screen but with all edit controls, the avatar picker, the sign-out button, and deck-import stripped out. `DeckBrowserModal` is opened with `editing={false}` and no `onImportDeck` prop so its import button is hidden.
 
 ### Onboarding Data Flow
 
-`OnboardingContext` (in `contexts/OnboardingContext.tsx`) is provided at root layout level and carries all wizard state across the 4 screens: `selectedTCGs`, `region`, `latitude/longitude`, `skillLevels`, `username`, `avatarBase64/Uri`. On finish (`name.tsx`), data is written to Supabase and `onboarding_complete` is set to `true`.
+`OnboardingContext` (in `contexts/OnboardingContext.tsx`) carries all wizard state: `selectedTCGs`, `region`, `latitude/longitude`, `skillLevels`, `username`, `avatarBase64/Uri`. On finish (`name.tsx`), data is written to Supabase and `onboarding_complete` is set to `true`.
 
-### Theming — `ThemeContext` + `useTheme()` + `makeStyles(C)`
+### Design System — Noir Console
 
-`contexts/ThemeContext.tsx` provides app-wide light/dark mode via `ThemeProvider`. `useTheme()` returns `{ scheme, colors, toggleScheme }`:
-- `colors` is `darkColors` or `lightColors` from `constants/theme.ts` — same `ThemeColors` shape; only the neutrals (`bg`/`surface`/`text`/`border`/…) differ between palettes, while `primary` (`#7C3AED`)/`primaryLight`/`error`/`success` are shared brand constants that stay constant across themes
-- `scheme` is initialized from `Appearance.getColorScheme()`, then persisted to `AsyncStorage` under key `gather:colorScheme`
-- A sun/moon toggle in the Profil header calls `toggleScheme()`
+**Dark-only.** Both `darkColors` and `lightColors` in `constants/theme.ts` export the same object (`noirColors`). There is no light palette. `toggleScheme()` is a no-op. Do not build light-mode-specific logic.
 
-**Every** styled screen/component follows this convention — never hardcode colors or import a static palette:
+Source of truth: `design-system.json` in the repo root. `constants/theme.ts` is the TypeScript representation — do not deviate from it without product approval.
+
+Key tokens:
+- Canvas `#0F1011`, panel `#1B1C1D`, accent **electric blue `#168BFF`** (`C.primary`)
+- Text hierarchy: `C.text` → `C.textMuted` → `C.textFaint` → `C.textDisabled`
+- Surface stack: `C.surface` → `C.surface2` → `C.surface3`
+- `ELEVATION.panel` / `ELEVATION.floating` — shadow preset objects, spread directly onto `StyleSheet` entries
+- `RADII.sm/md/lg/xl/pill` — DS border-radius scale
+- `FONTS.regular/medium/semibold/bold` — Inter weight tokens (400/500/600/700). `extrabold`/`black` both map to 700 for legacy reasons; **new code uses `bold` as the maximum weight**
+
+**Every** styled screen/component follows this convention — never hardcode colors:
 ```tsx
 const { colors: C } = useTheme();
 const styles = useMemo(() => makeStyles(C), [C]);
-// `function makeStyles(C: ThemeColors) { return StyleSheet.create({ ... }) }`
-// is defined once below the component, building styles from `C.primary`, `C.surface`, `C.text`, etc.
+// function makeStyles(C: ThemeColors) { return StyleSheet.create({ ... }) }
+// defined once below the component
 ```
+
+### TCG Icons — `components/TCGIcon.tsx`
+
+`<TCGIcon tcg={TCGInfo} size={n} color={hex} />` renders an image asset for TCGs that have one (MTG, Pokémon, Lorcana), or falls back to the `abbr` text badge. The `ICONS` map inside uses static `require()` calls (React Native bundler requirement — dynamic requires don't work). To add a new TCG icon, add one line to that map.
+
+`TCGInfo` (from `types/index.ts`) has `id`, `name`, `color`, `abbr` — **no `emoji` field**. The `abbr` is a short string like `MTG`/`PKM`/`YGO`.
 
 ### Supabase Schema
 
 Four tables, all with RLS enabled (public read, owner-only write):
-- `public.profiles` — one row per user, linked to `auth.users` via trigger. Key field: `onboarding_complete: boolean`.
+- `public.profiles` — one row per user, created by trigger on `auth.users` insert. Key field: `onboarding_complete: boolean`.
 - `public.user_tcgs` — which TCGs a user plays + skill level (1–10).
 - `public.user_tcg_details` — JSONB `details` column for flexible per-TCG profile fields (MTG colors, play style, etc.).
 - `public.user_decks` — imported decklists: `tcg`, `name`, `format`, `cards` (JSONB array of `DeckCard`), `card_count`.
 
-`user_tcgs` and `user_tcg_details` are uniquely keyed by `(user_id, tcg)`, not by their `id` PK — always pass `{ onConflict: 'user_id,tcg' }` to `.upsert()`, otherwise repeat saves attempt an INSERT and fail on the unique constraint (silently, unless the error is logged).
+`user_tcgs` and `user_tcg_details` are uniquely keyed by `(user_id, tcg)` — always pass `{ onConflict: 'user_id,tcg' }` to `.upsert()`, or repeat saves will silently fail on the unique constraint.
 
 Storage bucket `avatars` — public, files named `{userId}.jpg`, uploaded via `lib/auth.ts:uploadAvatar`.
 
 ### Deck Import & Browsing
 
-A multi-component flow (all theme-aware via `useTheme()`/`makeStyles`) for pasting, storing, and browsing decklists:
-- **`DeckImportModal`** — paste a raw decklist (optional `Commander`/`Deck`/`Sideboard`/`Maybeboard` section headers, lines like `2x Lightning Bolt`); resolves names → cards/images via a live external API (MTG → Scryfall `/cards/collection` batch lookup with `/cards/named?fuzzy=` per-card fallback; Pokémon → Pokémon TCG API search), then saves the result to `user_decks`
-- **`DeckBrowserModal`** — full-screen grid of a user's decks with a format filter; opens a deck-detail view with the card grid plus, for MTG Commander/EDH decks, a power-level readout
-- **`DeckTile`** — the deck grid tile shared by the browser and the profile screen (cover from the commander/first card with an image, name, format, card count)
-- **`CardInfoModal`** — full-screen card-detail overlay opened by tapping a card in the deck-detail grid
-- **`lib/powerLevel.ts`** — `analyzeDeckPowerLevel(deck)`: a heuristic that places MTG Commander decks into WotC's 5-tier "Commander Brackets" system (`CommanderBracket` 1–5: Zurschaustellung/Basisstufe/Aufgewertet/Optimiert/cEDH), scored against curated card lists (`GAME_CHANGERS`, `FAST_MANA`, `TUTORS`, `EXTRA_TURNS`, …). Returns `null` for non-MTG or non-Commander/EDH decks.
+- **`DeckImportModal`** — paste raw decklist; resolves names → cards/images via Scryfall (MTG) or Pokémon TCG API; saves to `user_decks`
+- **`DeckBrowserModal`** — full-screen grid with format filter + deck-detail view. Accepts `editing?: boolean` (hides card-remove controls when false) and `onImportDeck?: () => void` (import button is only rendered when this prop is provided)
+- **`DeckTile`** — shared deck grid tile (cover image from commander/first card, or TCGIcon fallback)
+- **`CardInfoModal`** — full-screen card-detail overlay
+- **`lib/powerLevel.ts`** — `analyzeDeckPowerLevel(deck)`: places MTG Commander decks into WotC 5-tier Commander Brackets (1–5), returning `DeckPowerLevel | null` (`null` for non-MTG/non-Commander decks). Also exports `CommanderBracket` (`1|2|3|4|5`), `BRACKET_LABELS`, `BRACKET_COLORS` — used by the Discover map's bracket filter.
 
-### Design System
+### Constants & Types
 
-- `constants/theme.ts` — `darkColors`/`lightColors`/`ThemeColors` (see Theming above), `SPACING`, `FONTS` (Inter weight tokens, e.g. `FONTS.semibold`/`FONTS.extrabold` — fonts are loaded once via `@expo-google-fonts/inter` in the root layout; never reference a raw font-family string).
-- `constants/tcgs.ts` — `TCG_LIST`, `TCG_MAP`, per-TCG field schemas (`TCG_FIELDS`, field types currently `text`/`multiline`/`manaColor`/`playStyle`), plus `MTG_COLORS` and `PLAY_STYLES`. TCG colors/emoji drive UI theming throughout profile and onboarding.
-- `types/index.ts` — `TCGId`, `Profile`, `UserTCG`, `UserTCGDetails`, `DeckCard`, `UserDeck`.
-- `lib/alert.ts` — `showAlert(title, message?)`, the cross-platform single-button alert wrapper (native `Alert.alert`, web `window.alert`); use it instead of `Alert.alert` directly (see Web Compatibility Rules).
+- `constants/tcgs.ts` — `TCG_LIST`, `TCG_MAP`, `TCG_FIELDS` (field types: `text`/`multiline`/`manaColor`/`playStyle`), `MTG_COLORS`, `PLAY_STYLES`
+- `types/index.ts` — `TCGId`, `Profile`, `UserTCG`, `UserTCGDetails`, `DeckCard`, `UserDeck`
+- `lib/alert.ts` — `showAlert(title, message?)`, cross-platform single-button alert (see Web Compatibility Rules)
 
-### `components/CardPicker.tsx` — implemented but currently unwired
+### `components/CardPicker.tsx` — implemented but unwired
 
-A full-screen live card-search modal exists (Scryfall search/autocomplete for MTG, Pokémon TCG API for Pokémon, typeahead, long-press-to-zoom, multi-select up to `maxCards`), but **no `TCG_FIELDS` entry references it** — there's no `cardPicker` field type in any TCG's field list, so it isn't imported or rendered anywhere. It's available-but-orphaned rather than dead code: re-wiring it means adding a `cardPicker` field type to the relevant `TCG_FIELDS` entries and JSON-stringifying its `SelectedCard[]` output into the `details` JSONB column on save (and parsing it back defensively — handle both string and pre-parsed array forms — when reading).
+Full-screen live card-search modal (Scryfall/Pokémon TCG API, typeahead, multi-select). No `TCG_FIELDS` entry uses it (`cardPicker` field type doesn't exist yet). Re-wiring: add a `cardPicker` field type to the relevant `TCG_FIELDS` entries; JSON-stringify `SelectedCard[]` into the JSONB `details` column on save; parse it back defensively (handle both string and pre-parsed array) when reading.
 
 ### Web Compatibility Rules
 
-- Never use `Alert.alert` with multi-button arrays on web — it maps to `window.confirm` and callbacks don't fire. Use `lib/alert.ts:showAlert()` (single-button) or call handlers directly.
-- Never use conditional rendering like `{someString && <View>}` — if `someString` is `""`, React Native Web renders a text node inside a View and crashes. Always coerce to boolean: `{!!someString && <View>}`.
-- `expo-location`'s `reverseGeocodeAsync` does not work on web — use the Nominatim API (`nominatim.openstreetmap.org`) for geocoding instead.
-- Modals must use `animationType={Platform.OS === 'web' ? 'fade' : 'slide'}` — on web, the native `slide` dismissal animation can leave the overlay capturing touches and block elements underneath after close.
+- Never use `Alert.alert` with multi-button arrays on web — use `lib/alert.ts:showAlert()` (single-button) or call handlers directly.
+- Never use `{someString && <View>}` — if `someString` is `""`, React Native Web renders a text node inside a View and crashes. Always coerce: `{!!someString && <View>}`.
+- `expo-location`'s `reverseGeocodeAsync` does not work on web — use the Nominatim API (`nominatim.openstreetmap.org`) instead.
+- Modals must use `animationType={Platform.OS === 'web' ? 'fade' : 'slide'}` — slide on web leaves the overlay capturing touches after close.
 
 ### Environment
 

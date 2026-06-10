@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   Image,
   Modal,
   StyleSheet,
@@ -13,10 +13,11 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONTS, ThemeColors } from '@/constants/theme';
+import { FONTS, ThemeColors, ELEVATION } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import { TCGId, DeckCard, UserDeck } from '@/types';
+import { analyzeDeckPowerLevel } from '@/lib/powerLevel';
 
 interface Props {
   visible: boolean;
@@ -263,7 +264,10 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
     if (!resolved || !name.trim()) return;
     setSaving(true);
     try {
-      const cardCount = resolved.cards.reduce((s, c) => s + c.quantity, 0);
+      const cardCount  = resolved.cards.reduce((s, c) => s + c.quantity, 0);
+      const tempDeck   = { id: '', user_id: userId, tcg, name: name.trim(), format: format.trim() || null, cards: resolved.cards, card_count: cardCount, created_at: '', bracket: null } as UserDeck;
+      const powerLevel = analyzeDeckPowerLevel(tempDeck);
+      const bracket    = powerLevel?.recommendedBracket ?? null;
       const { data, error } = await supabase
         .from('user_decks')
         .insert({
@@ -273,6 +277,7 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
           format: format.trim() || null,
           cards: resolved.cards,
           card_count: cardCount,
+          bracket,
         })
         .select()
         .single();
@@ -289,6 +294,9 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
   const maybeboardCount = parsedLines.length - lines.length;
   const hasImages = tcg === 'mtg' || tcg === 'pokemon';
   const expectedSize = tcg === 'mtg' ? expectedDeckSize(format) : null;
+
+  const canSave = !!resolved && !!name.trim() && !saving;
+  const canPreview = lines.length > 0 && !resolving;
 
   const renderCardList = (list: DeckCard[], keyPrefix: string) => (
     hasImages ? (
@@ -335,9 +343,12 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
 
           <View style={styles.header}>
             <Text style={styles.title}>Deck importieren</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+            <Pressable
+              onPress={handleClose}
+              style={({ pressed }) => [styles.closeBtn, pressed && styles.closeBtnPressed]}
+            >
               <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
@@ -346,7 +357,7 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
             <TextInput
               style={styles.input}
               placeholder="z.B. Mono Blue Tempo"
-              placeholderTextColor={C.textDim}
+              placeholderTextColor={C.textFaint}
               value={name}
               onChangeText={setName}
             />
@@ -355,21 +366,20 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
             <TextInput
               style={styles.input}
               placeholder="z.B. Commander"
-              placeholderTextColor={C.textDim}
+              placeholderTextColor={C.textFaint}
               value={format}
               onChangeText={setFormat}
             />
             {tcg === 'mtg' && (
               <View style={styles.chipRow}>
                 {MTG_FORMAT_SUGGESTIONS.map(f => (
-                  <TouchableOpacity
+                  <Pressable
                     key={f}
-                    style={[styles.chip, format === f && styles.chipActive]}
+                    style={({ pressed }) => [styles.chip, format === f && styles.chipActive, pressed && !format.includes(f) && styles.chipPressed]}
                     onPress={() => setFormat(f)}
-                    activeOpacity={0.75}
                   >
                     <Text style={[styles.chipText, format === f && styles.chipTextActive]}>{f}</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -378,7 +388,7 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
             <TextInput
               style={[styles.input, styles.decklistInput]}
               placeholder={PLACEHOLDER}
-              placeholderTextColor={C.textDim}
+              placeholderTextColor={C.textFaint}
               value={decklist}
               onChangeText={text => { setDecklist(text); setResolved(null); }}
               multiline
@@ -397,11 +407,10 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
               </Text>
             )}
 
-            <TouchableOpacity
-              style={[styles.previewBtn, lines.length === 0 && styles.previewBtnOff]}
+            <Pressable
+              style={({ pressed }) => [styles.previewBtn, !canPreview && styles.previewBtnOff, pressed && canPreview && styles.previewBtnPressed]}
               onPress={preview}
-              disabled={lines.length === 0 || resolving}
-              activeOpacity={0.85}
+              disabled={!canPreview}
             >
               {resolving
                 ? <ActivityIndicator color={C.primary} size="small" />
@@ -411,7 +420,7 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
                   </Text>
                 )
               }
-            </TouchableOpacity>
+            </Pressable>
 
             {!!resolved && (() => {
               const totalCount = resolved.cards.reduce((s, c) => s + c.quantity, 0);
@@ -453,11 +462,10 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
           </ScrollView>
 
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.confirmBtn, (!resolved || !name.trim()) && styles.confirmBtnOff]}
+            <Pressable
+              style={({ pressed }) => [styles.confirmBtn, !canSave && styles.confirmBtnOff, pressed && canSave && styles.confirmBtnPressed]}
               onPress={save}
-              disabled={!resolved || !name.trim() || saving}
-              activeOpacity={0.85}
+              disabled={!canSave}
             >
               {saving
                 ? <ActivityIndicator color="#FFFFFF" size="small" />
@@ -467,7 +475,7 @@ export function DeckImportModal({ visible, onClose, tcg, userId, onImported }: P
                   </Text>
                 )
               }
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
         </View>
@@ -488,12 +496,14 @@ function makeStyles(C: ThemeColors) {
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  title: { color: C.text, fontSize: 20, fontFamily: FONTS.extrabold },
+  title: { color: C.text, fontSize: 20, fontFamily: FONTS.bold },
   closeBtn: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 36, height: 36, borderRadius: 10,
     backgroundColor: C.surface2,
+    borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
+  closeBtnPressed: { backgroundColor: C.surface3 },
   closeText: { color: C.textMuted, fontSize: 14, fontFamily: FONTS.bold },
 
   body: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -516,39 +526,46 @@ function makeStyles(C: ThemeColors) {
     paddingVertical: 12,
     color: C.text,
     fontSize: 15,
+    fontFamily: FONTS.regular,
   },
   decklistInput: { minHeight: 160, textAlignVertical: 'top' },
-  hint: { color: C.textDim, fontSize: 12, marginTop: 8, lineHeight: 17 },
-  maybeboardHint: { color: C.textMuted, fontSize: 12, marginTop: 6, lineHeight: 17, fontStyle: 'italic' },
+  hint: { color: C.textFaint, fontSize: 12, marginTop: 8, lineHeight: 17, fontFamily: FONTS.regular },
+  maybeboardHint: { color: C.textMuted, fontSize: 12, marginTop: 6, lineHeight: 17, fontStyle: 'italic', fontFamily: FONTS.regular },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   chip: {
+    height: 32,
     borderWidth: 1,
     borderColor: C.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
+  chipPressed: { backgroundColor: C.surface2 },
   chipText: { color: C.textMuted, fontSize: 12, fontFamily: FONTS.semibold },
-  chipTextActive: { color: C.text },
+  chipTextActive: { color: '#FFFFFF' },
 
   previewBtn: {
     backgroundColor: C.surface2,
     borderWidth: 1,
     borderColor: C.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
+    borderRadius: 12,
+    height: 48,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 20,
   },
   previewBtnOff: { borderColor: C.border },
+  previewBtnPressed: { backgroundColor: C.primaryTint },
   previewBtnText: { color: C.primary, fontSize: 15, fontFamily: FONTS.bold },
 
   previewSection: { marginTop: 8 },
   sizeHint: { fontSize: 12, fontFamily: FONTS.semibold, lineHeight: 17, marginTop: -4, marginBottom: 8 },
-  sizeHintOk: { color: '#3FB97D' },
-  sizeHintWarn: { color: '#E0A53D' },
+  sizeHintOk:   { color: C.success },
+  sizeHintWarn: { color: C.warning },
+
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   cardWrap: { position: 'relative' },
   commanderWrap: { borderWidth: 2, borderColor: '#F0C75E', borderRadius: 10, padding: 2 },
@@ -562,7 +579,7 @@ function makeStyles(C: ThemeColors) {
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  qtyText: { color: '#FFFFFF', fontSize: 11, fontFamily: FONTS.extrabold },
+  qtyText: { color: '#FFFFFF', fontSize: 11, fontFamily: FONTS.bold },
   commanderTag: {
     position: 'absolute', top: 7, left: 7,
     backgroundColor: '#F0C75E',
@@ -570,22 +587,33 @@ function makeStyles(C: ThemeColors) {
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  commanderTagText: { color: '#1A1300', fontSize: 9, fontFamily: FONTS.black },
+  commanderTagText: { color: '#1A1300', fontSize: 9, fontFamily: FONTS.bold },
 
   textList: { gap: 6, marginTop: 4 },
-  textListRow: { color: C.text, fontSize: 14 },
+  textListRow: { color: C.text, fontSize: 14, fontFamily: FONTS.regular },
   textListCommander: { color: '#F0C75E', fontFamily: FONTS.bold },
 
-  notFoundText: { color: C.primary, fontSize: 12, marginTop: 14, lineHeight: 17 },
+  notFoundText: { color: C.warning, fontSize: 12, marginTop: 14, lineHeight: 17, fontFamily: FONTS.regular },
 
-  footer: { padding: 20, borderTopWidth: 1, borderTopColor: C.border },
-  confirmBtn: {
-    backgroundColor: C.primary,
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    ...ELEVATION.panel,
   },
-  confirmBtnOff: { backgroundColor: C.surface3 },
+  confirmBtn: {
+    height: 48,
+    backgroundColor: C.primary,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+  },
+  confirmBtnPressed:  { backgroundColor: C.primaryDeep },
+  confirmBtnOff:      { backgroundColor: C.surface3, shadowOpacity: 0 },
   confirmText: { color: '#FFFFFF', fontSize: 16, fontFamily: FONTS.bold },
   });
 }

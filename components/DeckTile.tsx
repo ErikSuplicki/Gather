@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { FONTS, ThemeColors } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { MTG_COLORS } from '@/constants/tcgs';
+import { TCGIcon } from './TCGIcon';
+import { ManaSymbol } from './icons';
 import { TCGInfo, UserDeck } from '@/types';
 import { analyzeDeckPowerLevel, BRACKET_COLORS, BRACKET_LABELS } from '@/lib/powerLevel';
 
@@ -14,11 +16,24 @@ const COLOR_IDENTITY_TO_MTG_COLOR: Record<string, MtgColor['id']> = {
 };
 const COLORLESS_MTG_COLOR = MTG_COLORS.find(c => c.id === 'colorless')!;
 
-function commanderColors(colorIdentity: string[] | undefined): MtgColor[] | null {
-  if (!colorIdentity) return null;
-  if (colorIdentity.length === 0) return [COLORLESS_MTG_COLOR];
-  return colorIdentity
-    .map(letter => MTG_COLORS.find(c => c.id === COLOR_IDENTITY_TO_MTG_COLOR[letter]))
+const WUBRG_ORDER = ['W', 'U', 'B', 'R', 'G'];
+
+function deckColorIdentity(cards: UserDeck['cards']): MtgColor[] | null {
+  // Commander: use the commander card's declared color identity
+  const commander = cards.find(c => c.isCommander);
+  if (commander?.colorIdentity !== undefined) {
+    if (commander.colorIdentity.length === 0) return [COLORLESS_MTG_COLOR];
+    return commander.colorIdentity
+      .map(l => MTG_COLORS.find(c => c.id === COLOR_IDENTITY_TO_MTG_COLOR[l]))
+      .filter((c): c is MtgColor => !!c);
+  }
+  // All other formats: union of main-deck card color identities, sorted WUBRG
+  const letters = new Set<string>();
+  cards.filter(c => !c.isSideboard).forEach(c => c.colorIdentity?.forEach(l => letters.add(l)));
+  if (letters.size === 0) return null;
+  return WUBRG_ORDER
+    .filter(l => letters.has(l))
+    .map(l => MTG_COLORS.find(c => c.id === COLOR_IDENTITY_TO_MTG_COLOR[l]))
     .filter((c): c is MtgColor => !!c);
 }
 
@@ -39,19 +54,16 @@ export function DeckTile({ deck, tcgInfo, onPress, editing, onDelete, width = 13
     ?? null;
   const height = Math.floor(width / 0.718);
   const powerLevel = useMemo(() => analyzeDeckPowerLevel(deck), [deck]);
-  const colors = useMemo(
-    () => commanderColors(deck.cards.find(c => c.isCommander)?.colorIdentity),
-    [deck.cards],
-  );
+  const colors = useMemo(() => deckColorIdentity(deck.cards), [deck.cards]);
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[styles.wrap, { width }]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.wrap, { width }, pressed && { opacity: 0.88 }]}>
       <View style={[styles.coverWrap, { height }]}>
         {cover ? (
           <Image source={{ uri: cover }} style={styles.cover} resizeMode="cover" />
         ) : (
           <View style={[styles.coverFallback, { backgroundColor: tcgInfo.color + '14', borderColor: tcgInfo.color + '33' }]}>
-            <Text style={styles.coverEmoji}>{tcgInfo.emoji}</Text>
+            <TCGIcon tcg={tcgInfo} size={40} color={tcgInfo.color} />
           </View>
         )}
         {!!powerLevel && (
@@ -60,21 +72,19 @@ export function DeckTile({ deck, tcgInfo, onPress, editing, onDelete, width = 13
           </View>
         )}
         {!!editing && !!onDelete && (
-          <TouchableOpacity
+          <Pressable
             onPress={onDelete}
-            style={styles.deleteTag}
+            style={({ pressed }) => [styles.deleteTag, pressed && { opacity: 0.75 }]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.deleteText}>✕</Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
       {!!colors && (
         <View style={styles.colorRow}>
           {colors.map((c, i) => (
-            <View key={c.id + i} style={styles.colorChip}>
-              <Text style={styles.colorChipSymbol}>{c.symbol}</Text>
-            </View>
+            <ManaSymbol key={c.id + i} manaId={c.id} size={16} />
           ))}
         </View>
       )}
@@ -91,7 +101,7 @@ export function DeckTile({ deck, tcgInfo, onPress, editing, onDelete, width = 13
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -113,7 +123,7 @@ function makeStyles(C: ThemeColors) {
     },
     cover: { width: '100%', height: '100%' },
     coverFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-    coverEmoji: { fontSize: 34 },
+    coverEmoji: { fontSize: 15, fontFamily: FONTS.bold, color: C.textMuted, letterSpacing: 0.5 },
     deleteTag: {
       position: 'absolute', top: 6, right: 6,
       width: 24, height: 24, borderRadius: 12,
@@ -128,14 +138,7 @@ function makeStyles(C: ThemeColors) {
       paddingVertical: 3,
     },
     bracketBadgeText: { color: '#FFFFFF', fontSize: 10.5, fontFamily: FONTS.extrabold },
-    colorRow: { flexDirection: 'row', gap: 4, marginTop: 1 },
-    colorChip: {
-      width: 18, height: 18, borderRadius: 9,
-      alignItems: 'center', justifyContent: 'center',
-      backgroundColor: C.surface3,
-      borderWidth: 1, borderColor: C.border,
-    },
-    colorChipSymbol: { fontSize: 9.5, lineHeight: 11 },
+    colorRow: { flexDirection: 'row', gap: 3, marginTop: 2 },
     name: { color: C.text, fontSize: 13, fontFamily: FONTS.bold },
     meta: { color: C.textMuted, fontSize: 11 },
     bracketRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

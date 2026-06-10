@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   Image,
   ActivityIndicator,
@@ -14,55 +14,51 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
 import { TCG_MAP, TCG_FIELDS, MTG_COLORS, PLAY_STYLES } from '@/constants/tcgs';
-import { FONTS, ThemeColors } from '@/constants/theme';
+import { FONTS, ThemeColors, ELEVATION, RADII } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ManaSymbol } from '@/components/icons';
 import { DeckImportModal } from '@/components/DeckImportModal';
 import { DeckBrowserModal } from '@/components/DeckBrowserModal';
 import { DeckTile } from '@/components/DeckTile';
+import { TCGIcon } from '@/components/TCGIcon';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar, signOut } from '@/lib/auth';
 import { Profile, UserTCG, TCGId, UserDeck } from '@/types';
 
-// ─── Design-only placeholder content (mirrors the reference mockup; no backing data yet) ───
 const PLACEHOLDER_BIO = 'Sammle seit Jahren Karten, liebe enge Matches und ziehe nach jedem Turnier ein neues Deck aus dem Hut. Immer offen für eine Partie.';
-
 const PLAYER_LEVEL = 24;
-const PLAYER_XP = 2350;
+const PLAYER_XP    = 2350;
 const PLAYER_XP_NEXT = 3000;
 
 const ENGAGEMENT_STATS = [
-  { icon: '🎮', value: '72', label: 'Events besucht' },
-  { icon: '👥', value: '143', label: 'Gegner gespielt' },
-  { icon: '🏆', value: '28', label: 'Turniere' },
-  { icon: '⭐', value: '4.8', label: 'Bewertung' },
+  { value: '72',  label: 'Events' },
+  { value: '143', label: 'Gegner' },
+  { value: '28',  label: 'Turniere' },
+  { value: '4.8', label: 'Bewertung' },
 ];
 
-const TCG_START_DATE_PLACEHOLDER = 'Januar 2021';
-
 const PLACEHOLDER_ACTIVITY = {
-  icon: '🎲',
   lead: 'Nimmt teil an',
   highlight: 'Commander Night',
   meta: 'Heute, 19:00',
 };
 
 export default function ProfileScreen() {
-  const { colors: C, scheme, toggleScheme } = useTheme();
+  const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
 
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [tcgs, setTcgs] = useState<UserTCG[]>([]);
+  const [profile, setProfile]       = useState<Profile | null>(null);
+  const [tcgs, setTcgs]             = useState<UserTCG[]>([]);
   const [tcgDetails, setTcgDetails] = useState<Record<string, string>>({});
-  const [activeTCG, setActiveTCG] = useState<TCGId | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [activeTCG, setActiveTCG]   = useState<TCGId | null>(null);
+  const [editing, setEditing]       = useState(false);
   const [editDetails, setEditDetails] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [editSkill, setEditSkill] = useState(0);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [decks, setDecks] = useState<UserDeck[]>([]);
+  const [editSkill, setEditSkill]   = useState(0);
+  const [userId, setUserId]         = useState<string | null>(null);
+  const [decks, setDecks]           = useState<UserDeck[]>([]);
   const [importOpen, setImportOpen] = useState(false);
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserInitialDeckId, setBrowserInitialDeckId] = useState<string | null>(null);
@@ -72,23 +68,12 @@ export default function ProfileScreen() {
     setBrowserOpen(true);
   };
 
-  const openDeckImportFromBrowser = () => {
-    setBrowserOpen(false);
-    setImportOpen(true);
-  };
-
-  const handleImportedDeck = (deck: UserDeck) => {
-    setDecks(prev => [deck, ...prev]);
-  };
-
-  const handleDeckUpdated = (deck: UserDeck) => {
-    setDecks(prev => prev.map(d => (d.id === deck.id ? deck : d)));
-  };
-
+  const openDeckImportFromBrowser = () => { setBrowserOpen(false); setImportOpen(true); };
+  const handleImportedDeck  = (deck: UserDeck) => setDecks(prev => [deck, ...prev]);
+  const handleDeckUpdated   = (deck: UserDeck) => setDecks(prev => prev.map(d => d.id === deck.id ? deck : d));
   const deleteDeck = async (deck: UserDeck) => {
     setDecks(prev => prev.filter(d => d.id !== deck.id));
-    const { error } = await supabase.from('user_decks').delete().eq('id', deck.id);
-    if (error) console.error('deleteDeck failed:', error);
+    await supabase.from('user_decks').delete().eq('id', deck.id);
   };
 
   const fetchProfile = useCallback(async () => {
@@ -146,12 +131,9 @@ export default function ProfileScreen() {
         { onConflict: 'user_id,tcg' },
       );
       if (error) throw error;
-      const { error: skillError } = await supabase
-        .from('user_tcgs')
+      await supabase.from('user_tcgs')
         .update({ skill_level: editSkill })
-        .eq('user_id', session.user.id)
-        .eq('tcg', activeTCG);
-      if (skillError) throw skillError;
+        .eq('user_id', session.user.id).eq('tcg', activeTCG);
       setTcgs(prev => prev.map(t => t.tcg === activeTCG ? { ...t, skill_level: editSkill } : t));
       setTcgDetails(editDetails);
       setEditing(false);
@@ -198,17 +180,16 @@ export default function ProfileScreen() {
   const avgSkill = tcgs.length
     ? Math.round(tcgs.reduce((s, t) => s + t.skill_level, 0) / tcgs.length)
     : 0;
-
   const handle = (profile?.username ?? 'spieler').toLowerCase().replace(/[^a-z0-9]+/g, '_');
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
     : '—';
   const xpPct = Math.min(100, Math.round((PLAYER_XP / PLAYER_XP_NEXT) * 100));
   const tcgStartStats = [
-    { icon: '📊', value: '61%', label: 'Winrate' },
-    { icon: '🃏', value: String(decks.length), label: 'Decks' },
-    { icon: '⏱️', value: '312h', label: 'Gesamtspielzeit' },
-    { icon: '📈', value: '3', label: 'Top 8 Finishes' },
+    { value: '61%',  label: 'Winrate' },
+    { value: String(decks.length), label: 'Decks' },
+    { value: '312h', label: 'Spielzeit' },
+    { value: '3',    label: 'Top 8' },
   ];
 
   return (
@@ -216,29 +197,37 @@ export default function ProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* ── Page header ── */}
-        <View style={styles.header}>
+        {/* ── DS TopBar ── */}
+        <View style={styles.topBar}>
           <Text style={styles.pageTitle}>Profil</Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.signOutCircle} onPress={() => {}} activeOpacity={0.7}>
-              <Text style={styles.signOutArrow}>↗</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.signOutCircle} onPress={() => {}} activeOpacity={0.7}>
-              <Text style={styles.signOutArrow}>⋯</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.signOutCircle} onPress={toggleScheme}>
-              <Text style={styles.signOutArrow}>{scheme === 'dark' ? '☀️' : '🌙'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.signOutCircle} onPress={() => signOut()}>
-              <Text style={styles.signOutArrow}>↪</Text>
-            </TouchableOpacity>
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+              onPress={() => {}}
+            >
+              <Text style={styles.iconBtnLabel}>↗</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
+              onPress={() => {}}
+            >
+              <Text style={styles.iconBtnLabel}>⋯</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.iconBtn, styles.iconBtnDanger, pressed && styles.iconBtnDangerPressed]}
+              onPress={() => signOut()}
+            >
+              <Text style={[styles.iconBtnLabel, styles.iconBtnDangerLabel]}>↪</Text>
+            </Pressable>
           </View>
         </View>
 
-        {/* ── Avatar + info ── */}
-        <View style={styles.profileSection}>
-          <TouchableOpacity onPress={changeAvatar} activeOpacity={0.85} style={styles.avatarWrap}>
+        {/* ── DS ProfileCard — identity block ── */}
+        <View style={styles.profileCard}>
+          {/* Avatar */}
+          <Pressable onPress={changeAvatar} style={styles.avatarWrap}>
             {profile?.avatar_url ? (
               <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
             ) : (
@@ -250,10 +239,11 @@ export default function ProfileScreen() {
             )}
             <View style={styles.onlineDot} />
             <View style={styles.cameraTag}>
-              <Text style={{ fontSize: 10 }}>📷</Text>
+              <Text style={styles.cameraTagText}>+</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
+          {/* Name + handle */}
           <View style={styles.nameRow}>
             <Text style={styles.username}>{profile?.username ?? '—'}</Text>
             <View style={styles.verifiedBadge}>
@@ -263,106 +253,116 @@ export default function ProfileScreen() {
           <Text style={styles.handle}>@{handle}</Text>
           <Text style={styles.bio}>{PLACEHOLDER_BIO}</Text>
 
+          {/* Meta */}
           <View style={styles.metaRow}>
             {!!profile?.region && (
               <View style={styles.metaItem}>
-                <Text style={styles.metaIcon}>📍</Text>
                 <Text style={styles.metaText}>{profile.region}</Text>
               </View>
             )}
             <View style={styles.metaItem}>
-              <Text style={styles.metaIcon}>📅</Text>
-              <Text style={styles.metaText}>Mitglied seit {memberSince}</Text>
+              <Text style={styles.metaText}>Seit {memberSince}</Text>
             </View>
           </View>
 
+          {/* Action buttons */}
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.actionPrimary} onPress={() => {}} activeOpacity={0.85}>
-              <Text style={styles.actionPrimaryText}>Nachricht</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionOutline} onPress={() => {}} activeOpacity={0.85}>
-              <Text style={styles.actionOutlineText}>Freund hinzufügen</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionOutline} onPress={() => {}} activeOpacity={0.85}>
-              <Text style={styles.actionOutlineText}>Gemeinsames Event</Text>
-            </TouchableOpacity>
+            <Pressable
+              style={({ pressed }) => [styles.actionPrimary, pressed && styles.actionPrimaryPressed]}
+              onPress={() => {}}
+            >
+              <Text style={styles.actionPrimaryText}>Profil bearbeiten</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.actionSettings, pressed && styles.actionSettingsPressed]}
+              onPress={() => {}}
+            >
+              <Text style={styles.actionSettingsIcon}>⚙</Text>
+            </Pressable>
           </View>
         </View>
 
-        {/* ── Stats row ── */}
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
+        {/* ── DS ProfileCard — stat strip ── */}
+        <View style={styles.statStrip}>
+          <View style={styles.statCell}>
             <Text style={styles.statValue}>{tcgs.length}</Text>
             <Text style={styles.statLabel}>TCGs</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.stat}>
+          <View style={styles.statCell}>
             <Text style={styles.statValue}>{avgSkill > 0 ? avgSkill : '—'}</Text>
-            <Text style={styles.statLabel}>Ø Level</Text>
+            <Text style={styles.statLabel}>Ø Skill</Text>
           </View>
           <View style={styles.statDivider} />
-          <View style={styles.stat}>
+          <View style={styles.statCell}>
             <View style={styles.tcgEmojis}>
               {tcgs.slice(0, 4).map(t => (
-                <Text key={t.tcg} style={styles.tcgEmoji}>
-                  {TCG_MAP[t.tcg as TCGId].emoji}
-                </Text>
+                <TCGIcon key={t.tcg} tcg={TCG_MAP[t.tcg as TCGId]} size={14} color={C.textMuted} />
               ))}
             </View>
             <Text style={styles.statLabel}>Spiele</Text>
           </View>
         </View>
 
-        {/* ── TCG selector pills ── */}
+        {/* ── TCG selector chips ── */}
         {tcgs.length > 0 && (
-          <View style={styles.tcgPillsWrap}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tcgPillsRow}>
-              {tcgs.map(t => {
-                const info = TCG_MAP[t.tcg as TCGId];
-                const isActive = t.tcg === activeTCG;
-                return (
-                  <TouchableOpacity
-                    key={t.tcg}
-                    onPress={() => { setActiveTCG(t.tcg as TCGId); setEditing(false); }}
-                    style={[styles.tcgPill, isActive && styles.tcgPillActive]}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.tcgPillEmoji}>{info.emoji}</Text>
-                    <Text style={[styles.tcgPillText, isActive && styles.tcgPillTextActive]} numberOfLines={1}>
-                      {info.name.split(':')[0]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tcgPillsRow}
+            style={styles.tcgPillsWrap}
+          >
+            {tcgs.map(t => {
+              const info = TCG_MAP[t.tcg as TCGId];
+              const isActive = t.tcg === activeTCG;
+              return (
+                <Pressable
+                  key={t.tcg}
+                  onPress={() => { setActiveTCG(t.tcg as TCGId); setEditing(false); }}
+                  style={({ pressed }) => [
+                    styles.tcgPill,
+                    isActive && styles.tcgPillActive,
+                    pressed && !isActive && styles.tcgPillPressed,
+                  ]}
+                >
+                  <TCGIcon tcg={info} size={16} color={isActive ? C.primaryBright : C.textMuted} />
+                  <Text style={[styles.tcgPillText, isActive && styles.tcgPillTextActive]} numberOfLines={1}>
+                    {info.name.split(':')[0]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         )}
 
-        {/* ── Spielerlevel ── */}
-        <View style={styles.levelCard}>
-          <View style={styles.levelCardTop}>
-            <Text style={styles.cardEyebrow}>SPIELERLEVEL</Text>
+        {/* ── Spielerlevel card (DS Card + ProgressBar + StatCard grid) ── */}
+        <View style={styles.card}>
+          {/* Card header */}
+          <View style={styles.cardHeader}>
+            <Text style={styles.sectionLabel}>SPIELERLEVEL</Text>
             <View style={styles.levelBadge}>
-              <View style={styles.levelBadgeWingL} />
-              <View style={styles.levelBadgeWingR} />
               <View style={styles.levelBadgeDiamond} />
               <Text style={styles.levelBadgeGlyph}>★</Text>
             </View>
           </View>
+
+          {/* Level + XP */}
           <View style={styles.levelValueRow}>
             <Text style={styles.levelValue}>Lv. {PLAYER_LEVEL}</Text>
             <Text style={styles.levelXpText}>
               {PLAYER_XP.toLocaleString('de-DE')} / {PLAYER_XP_NEXT.toLocaleString('de-DE')} XP
             </Text>
           </View>
+
+          {/* DS ProgressBar (brand) */}
           <View style={styles.xpTrack}>
-            <View style={[styles.xpFill, { width: `${xpPct}%` }]} />
+            <View style={[styles.xpFill, { width: `${xpPct}%` as any }]} />
           </View>
 
+          {/* DS StatCard grid */}
           <View style={styles.engagementRow}>
             {ENGAGEMENT_STATS.map(s => (
-              <View key={s.label} style={styles.engagementItem}>
-                <Text style={styles.engagementIcon}>{s.icon}</Text>
+              <View key={s.label} style={styles.engagementCell}>
                 <Text style={styles.engagementValue}>{s.value}</Text>
                 <Text style={styles.engagementLabel}>{s.label}</Text>
               </View>
@@ -370,19 +370,20 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* ── TCG content ── */}
+        {/* ── TCG-specific content ── */}
         {activeTCG && activeTCGInfo && (
           <View style={styles.tcgContent}>
 
-            {/* Seit Beginn bei … */}
-            <View style={[styles.sinceCard, { borderColor: activeTCGInfo.color + '33' }]}>
-              <Text style={styles.sinceTitle}>
-                Seit Beginn bei {activeTCGInfo.name.split(':')[0]} · {TCG_START_DATE_PLACEHOLDER}
-              </Text>
+            {/* Since-beginn card */}
+            <View style={[styles.card, { borderColor: activeTCGInfo.color + '33' }]}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>
+                  Seit Beginn bei {activeTCGInfo.name.split(':')[0]}
+                </Text>
+              </View>
               <View style={styles.engagementRow}>
                 {tcgStartStats.map(s => (
-                  <View key={s.label} style={styles.engagementItem}>
-                    <Text style={styles.engagementIcon}>{s.icon}</Text>
+                  <View key={s.label} style={styles.engagementCell}>
                     <Text style={styles.engagementValue}>{s.value}</Text>
                     <Text style={styles.engagementLabel}>{s.label}</Text>
                   </View>
@@ -391,62 +392,63 @@ export default function ProfileScreen() {
             </View>
 
             {/* Skill bar */}
-            <View style={styles.skillSection}>
-              <Text style={styles.fieldLabel}>Skillstufe</Text>
+            <View style={styles.card}>
+              <Text style={styles.sectionLabel}>SKILLSTUFE</Text>
               <View style={styles.skillBar}>
                 {Array.from({ length: 10 }, (_, i) => {
                   const displaySkill = editing ? editSkill : activeTCGSkill;
                   const filled = i < displaySkill;
                   if (editing) {
                     return (
-                      <TouchableOpacity
+                      <Pressable
                         key={i}
-                        style={[styles.skillSeg, styles.skillSegEditable, filled && { backgroundColor: C.primary }]}
+                        style={[styles.skillSeg, styles.skillSegEditable, filled && styles.skillSegFilled]}
                         onPress={() => setEditSkill(i + 1)}
-                        activeOpacity={0.7}
                         hitSlop={{ top: 14, bottom: 14 }}
                       />
                     );
                   }
-                  return (
-                    <View key={i} style={[styles.skillSeg, filled && { backgroundColor: C.primary }]} />
-                  );
+                  return <View key={i} style={[styles.skillSeg, filled && styles.skillSegFilled]} />;
                 })}
                 <Text style={styles.skillNum}>{editing ? editSkill : activeTCGSkill}/10</Text>
               </View>
-            </View>
 
-            {/* Edit actions */}
-            <View style={styles.sectionActions}>
-              {editing ? (
-                <>
-                  <TouchableOpacity onPress={() => { setEditDetails(tcgDetails); setEditSkill(activeTCGSkill); setEditing(false); }}>
-                    <Text style={styles.cancelText}>Abbrechen</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={saveDetails} disabled={saving} style={styles.saveBtn}>
-                    {saving
-                      ? <ActivityIndicator color={C.text} size="small" />
-                      : <Text style={styles.saveBtnText}>Speichern</Text>
-                    }
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={styles.editBtn}
-                  onPress={() => { setEditDetails(tcgDetails); setEditSkill(activeTCGSkill); setEditing(true); }}
-                >
-                  <Text style={styles.editBtnText}>Bearbeiten</Text>
-                </TouchableOpacity>
-              )}
+              {/* Edit actions */}
+              <View style={styles.sectionActions}>
+                {editing ? (
+                  <>
+                    <Pressable onPress={() => { setEditDetails(tcgDetails); setEditSkill(activeTCGSkill); setEditing(false); }}>
+                      <Text style={styles.cancelText}>Abbrechen</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={saveDetails}
+                      disabled={saving}
+                      style={({ pressed }) => [styles.saveBtn, pressed && styles.saveBtnPressed]}
+                    >
+                      {saving
+                        ? <ActivityIndicator color="#FFFFFF" size="small" />
+                        : <Text style={styles.saveBtnText}>Speichern</Text>
+                      }
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable
+                    style={({ pressed }) => [styles.editBtn, pressed && styles.editBtnPressed]}
+                    onPress={() => { setEditDetails(tcgDetails); setEditSkill(activeTCGSkill); setEditing(true); }}
+                  >
+                    <Text style={styles.editBtnText}>Bearbeiten</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
 
             {/* Decks */}
-            <View style={styles.decksSection}>
-              <View style={styles.decksHeader}>
-                <Text style={styles.cardEyebrow}>DECKS ({decks.length})</Text>
-                <TouchableOpacity onPress={() => setImportOpen(true)}>
-                  <Text style={styles.viewAllText}>+ Deck importieren</Text>
-                </TouchableOpacity>
+            <View style={styles.deckSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>DECKS ({decks.length})</Text>
+                <Pressable onPress={() => setImportOpen(true)}>
+                  <Text style={styles.linkText}>+ Deck importieren</Text>
+                </Pressable>
               </View>
 
               {decks.length > 0 ? (
@@ -463,29 +465,27 @@ export default function ProfileScreen() {
                       />
                     ))}
                   </ScrollView>
-                  <TouchableOpacity
-                    style={styles.viewAllDecksBtn}
+                  <Pressable
+                    style={({ pressed }) => [styles.viewAllBtn, pressed && styles.viewAllBtnPressed]}
                     onPress={() => openDeckBrowser(null)}
-                    activeOpacity={0.8}
                   >
-                    <Text style={styles.viewAllDecksText}>Alle {decks.length} Decks anzeigen ›</Text>
-                  </TouchableOpacity>
+                    <Text style={styles.viewAllBtnText}>Alle {decks.length} Decks anzeigen ›</Text>
+                  </Pressable>
                 </>
               ) : (
-                <>
-                  <Text style={styles.fieldEmpty}>Noch keine Decks importiert</Text>
-                  <TouchableOpacity
-                    style={styles.importDeckBtn}
+                <View style={styles.card}>
+                  <Text style={styles.emptyText}>Noch keine Decks importiert</Text>
+                  <Pressable
+                    style={({ pressed }) => [styles.importDeckBtn, pressed && styles.importDeckBtnPressed]}
                     onPress={() => setImportOpen(true)}
-                    activeOpacity={0.8}
                   >
-                    <Text style={styles.importDeckText}>+ Deck importieren</Text>
-                  </TouchableOpacity>
-                </>
+                    <Text style={styles.importDeckBtnText}>+ Deck importieren</Text>
+                  </Pressable>
+                </View>
               )}
             </View>
 
-            {/* Fields */}
+            {/* TCG field blocks */}
             {fields.map(field => {
               const displayVal = (editing ? editDetails : tcgDetails)[field.key] ?? '';
               return (
@@ -497,20 +497,15 @@ export default function ProfileScreen() {
                       {MTG_COLORS.map(c => {
                         const isSel = displayVal === c.id;
                         return (
-                          <TouchableOpacity
+                          <Pressable
                             key={c.id}
-                            style={[
-                              styles.manaBtn,
-                              isSel && styles.manaBtnActive,
-                              !isSel && { opacity: editing ? 0.65 : 0.35 },
-                            ]}
+                            style={[styles.manaBtn, isSel && styles.manaBtnActive, !isSel && { opacity: editing ? 0.65 : 0.35 }]}
                             onPress={() => editing && setEditDetails(p => ({ ...p, [field.key]: c.id }))}
                             disabled={!editing}
-                            activeOpacity={0.75}
                           >
                             <ManaSymbol manaId={c.id} size={40} />
                             <Text style={styles.manaLabel}>{c.label}</Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         );
                       })}
                     </View>
@@ -519,17 +514,16 @@ export default function ProfileScreen() {
                       {PLAY_STYLES.map(s => {
                         const isSel = displayVal === s.id;
                         return (
-                          <TouchableOpacity
+                          <Pressable
                             key={s.id}
                             style={[styles.styleBtn, isSel && styles.styleBtnActive, !isSel && { opacity: editing ? 0.65 : 0.4 }]}
                             onPress={() => editing && setEditDetails(p => ({ ...p, [field.key]: s.id }))}
                             disabled={!editing}
-                            activeOpacity={0.75}
                           >
                             <Text style={[styles.styleBtnText, isSel && styles.styleBtnTextActive]}>
                               {s.label}
                             </Text>
-                          </TouchableOpacity>
+                          </Pressable>
                         );
                       })}
                     </View>
@@ -538,7 +532,7 @@ export default function ProfileScreen() {
                       style={[styles.fieldInput, field.type === 'multiline' && styles.multilineInput]}
                       value={editDetails[field.key] ?? ''}
                       onChangeText={v => setEditDetails(p => ({ ...p, [field.key]: v }))}
-                      placeholderTextColor={C.textDim}
+                      placeholderTextColor={C.textFaint}
                       placeholder={`${field.label} eingeben...`}
                       multiline={field.type === 'multiline'}
                       numberOfLines={field.type === 'multiline' ? 4 : 1}
@@ -553,20 +547,21 @@ export default function ProfileScreen() {
             })}
 
             {/* Letzte Aktivitäten */}
-            <View style={styles.activitySection}>
-              <View style={styles.decksHeader}>
-                <Text style={styles.cardEyebrow}>LETZTE AKTIVITÄTEN</Text>
-                <TouchableOpacity onPress={() => {}}>
-                  <Text style={styles.viewAllText}>Alle anzeigen</Text>
-                </TouchableOpacity>
+            <View style={styles.deckSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>LETZTE AKTIVITÄTEN</Text>
+                <Pressable onPress={() => {}}>
+                  <Text style={styles.linkText}>Alle anzeigen</Text>
+                </Pressable>
               </View>
               <View style={styles.activityRow}>
                 <View style={styles.activityIconWrap}>
-                  <Text style={styles.activityIcon}>{PLACEHOLDER_ACTIVITY.icon}</Text>
+                  <Text style={{ fontSize: 18 }}>🎲</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.activityTitle} numberOfLines={1}>
-                    {PLACEHOLDER_ACTIVITY.lead} <Text style={styles.activityHighlight}>{PLACEHOLDER_ACTIVITY.highlight}</Text>
+                    {PLACEHOLDER_ACTIVITY.lead}{' '}
+                    <Text style={styles.activityHighlight}>{PLACEHOLDER_ACTIVITY.highlight}</Text>
                   </Text>
                   <Text style={styles.activityMeta}>{PLACEHOLDER_ACTIVITY.meta}</Text>
                 </View>
@@ -575,13 +570,11 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {tcgs.length === 0 && (
+        {tcgs.length === 0 && !loading && (
           <View style={[styles.center, { padding: 40 }]}>
             <Text style={styles.emptyText}>Keine TCGs im Profil.</Text>
           </View>
         )}
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       {activeTCG && (
@@ -611,421 +604,416 @@ export default function ProfileScreen() {
 
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: C.textMuted, fontSize: 15, textAlign: 'center' },
+  container:     { flex: 1, backgroundColor: C.bg },
+  scrollContent: { paddingBottom: 100 },
+  center:        { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyText:     { color: C.textFaint, fontSize: 14, fontFamily: FONTS.regular, textAlign: 'center' },
 
-  /* Header */
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 20,
+  // DS TopBar
+  topBar: {
+    height:            56,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    paddingHorizontal: 16,
   },
   pageTitle: {
-    color: C.text,
-    fontSize: 36,
-    fontFamily: FONTS.black,
-    letterSpacing: -0.5,
+    color:         C.text,
+    fontSize:      22,
+    fontFamily:    FONTS.bold,
+    letterSpacing: -0.22,
   },
-  headerActions: { flexDirection: 'row', gap: 10 },
-  signOutCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  signOutArrow: { color: C.textMuted, fontSize: 18 },
+  headerActions: { flexDirection: 'row', gap: 8 },
 
-  /* Profile section */
-  profileSection: {
-    alignItems: 'center',
-    paddingBottom: 24,
+  // DS IconButton
+  iconBtn: {
+    width:           36,
+    height:          36,
+    backgroundColor: C.surface2,
+    borderWidth:     1,
+    borderColor:     C.border,
+    borderRadius:    10,
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  avatarWrap: {
-    position: 'relative',
-    marginBottom: 14,
+  iconBtnPressed: { backgroundColor: C.surface3 },
+  iconBtnLabel:   { color: C.textMuted, fontSize: 16 },
+  iconBtnDanger:  { backgroundColor: C.errorBg, borderColor: C.errorRing },
+  iconBtnDangerPressed: { backgroundColor: 'rgba(227,98,89,0.22)' },
+  iconBtnDangerLabel:   { color: C.error },
+
+  // DS ProfileCard identity block
+  profileCard: {
+    marginHorizontal: 16,
+    marginBottom:     12,
+    alignItems:       'center',
+    backgroundColor:  C.surface,
+    borderWidth:      1,
+    borderColor:      C.border,
+    borderRadius:     16,
+    padding:          16,
+    ...ELEVATION.panel,
   },
-  avatar: { width: 90, height: 90, borderRadius: 45 },
+  avatarWrap:   { position: 'relative', marginBottom: 12 },
+  avatar:       { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: C.border },
   avatarFallback: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width:           80,
+    height:          80,
+    borderRadius:    40,
     backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth:     2,
+    borderColor:     C.border,
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  avatarInitial: { fontSize: 36, fontFamily: FONTS.extrabold, color: C.primary },
-  cameraTag: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: C.surface2,
-    borderWidth: 2,
-    borderColor: C.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  username: { color: C.text, fontSize: 22, fontFamily: FONTS.extrabold, marginBottom: 4 },
-  location: { color: C.textMuted, fontSize: 14 },
+  avatarInitial: { fontSize: 32, fontFamily: FONTS.bold, color: C.primary },
   onlineDot: {
-    position: 'absolute',
-    bottom: 4,
-    left: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    position:        'absolute',
+    bottom:          4,
+    left:            2,
+    width:           12,
+    height:          12,
+    borderRadius:    6,
     backgroundColor: C.success,
-    borderWidth: 2.5,
-    borderColor: C.bg,
+    borderWidth:     2,
+    borderColor:     C.surface,
   },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cameraTag: {
+    position:        'absolute',
+    bottom:          2,
+    right:           2,
+    width:           24,
+    height:          24,
+    borderRadius:    12,
+    backgroundColor: C.surface3,
+    borderWidth:     1.5,
+    borderColor:     C.border,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  cameraTagText: { color: C.text, fontSize: 13, fontFamily: FONTS.bold, lineHeight: 15 },
+  nameRow:      { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  username:     { color: C.text, fontSize: 18, fontFamily: FONTS.bold },
   verifiedBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width:           18,
+    height:          18,
+    borderRadius:    9,
     backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  verifiedBadgeText: { color: '#FFFFFF', fontSize: 10 },
-  handle: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.medium, marginTop: 2 },
+  verifiedBadgeText: { color: '#FFFFFF', fontSize: 9, fontFamily: FONTS.bold },
+  handle:  { color: C.textFaint, fontSize: 12, fontFamily: FONTS.regular, marginBottom: 10 },
   bio: {
-    color: C.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
-    marginTop: 10,
-    paddingHorizontal: 12,
+    color:             C.textMuted,
+    fontSize:          13,
+    fontFamily:        FONTS.regular,
+    lineHeight:        18,
+    textAlign:         'center',
+    paddingHorizontal: 8,
+    marginBottom:      12,
   },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 14 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaIcon: { fontSize: 12 },
+  metaText: { color: C.textMuted, fontSize: 12, fontFamily: FONTS.medium },
 
-  /* Meta row */
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginTop: 14 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaIcon: { fontSize: 13 },
-  metaText: { color: C.textMuted, fontSize: 12.5, fontFamily: FONTS.medium },
-
-  /* Action buttons */
-  actionRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 18 },
+  // Action buttons
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'stretch' },
   actionPrimary: {
+    flex:            1,
+    height:          40,
     backgroundColor: C.primary,
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
+    borderRadius:    10,
+    alignItems:      'center',
+    justifyContent:  'center',
+    shadowColor:     C.primary,
+    shadowOffset:    { width: 0, height: 0 },
+    shadowOpacity:   0.3,
+    shadowRadius:    6,
   },
-  actionPrimaryText: { color: '#FFFFFF', fontSize: 13.5, fontFamily: FONTS.bold },
-  actionOutline: {
-    borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
+  actionPrimaryPressed: { backgroundColor: C.primaryDeep },
+  actionPrimaryText:    { color: '#FFFFFF', fontSize: 14, fontFamily: FONTS.semibold },
+  actionSettings: {
+    width:           40,
+    height:          40,
+    backgroundColor: C.surface2,
+    borderWidth:     1,
+    borderColor:     C.border,
+    borderRadius:    10,
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  actionOutlineText: { color: C.text, fontSize: 13.5, fontFamily: FONTS.semibold },
+  actionSettingsPressed: { backgroundColor: C.surface3 },
+  actionSettingsIcon:    { color: C.textMuted, fontSize: 18 },
 
-  /* Stats */
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: C.surface,
-    borderRadius: 20,
-    marginHorizontal: 20,
-    paddingVertical: 18,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: C.border,
-    shadowColor: C.cardShadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 4,
+  // DS ProfileCard stat strip
+  statStrip: {
+    flexDirection:    'row',
+    marginHorizontal: 16,
+    marginBottom:     12,
+    backgroundColor:  C.surface,
+    borderRadius:     12,
+    borderWidth:      1,
+    borderColor:      C.border,
+    ...ELEVATION.panel,
   },
-  stat: { flex: 1, alignItems: 'center', gap: 5 },
-  statValue: { color: C.text, fontSize: 20, fontFamily: FONTS.extrabold },
+  statCell:  { flex: 1, alignItems: 'center', paddingVertical: 12, gap: 4 },
+  statValue: {
+    color:      C.text,
+    fontSize:   18,
+    fontFamily: FONTS.bold,
+    fontVariant: ['tabular-nums'],
+  },
   statLabel: {
-    color: C.textMuted,
-    fontSize: 10,
-    fontFamily: FONTS.semibold,
+    color:         C.textFaint,
+    fontSize:      10,
+    fontFamily:    FONTS.medium,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  statDivider: { width: 1, backgroundColor: C.border, marginVertical: 4 },
-  tcgEmojis: { flexDirection: 'row', gap: 2 },
-  tcgEmoji: { fontSize: 16 },
+  statDivider:    { width: 1, backgroundColor: C.border, marginVertical: 10 },
+  tcgEmojis:      { flexDirection: 'row', gap: 4 },
+  tcgEmoji:       { fontSize: 9, fontFamily: FONTS.bold, color: C.textMuted, letterSpacing: 0.3 },
 
-  /* TCG selector pills */
-  tcgPillsWrap: { marginBottom: 22 },
-  tcgPillsRow: { paddingHorizontal: 20, gap: 10 },
+  // TCG chips (DS Chip component)
+  tcgPillsWrap: { marginBottom: 12 },
+  tcgPillsRow:  { paddingHorizontal: 16, gap: 8 },
   tcgPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: C.surface2,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: C.border,
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               6,
+    height:            32,
+    paddingHorizontal: 12,
+    borderRadius:      RADII.pill,
+    borderWidth:       1,
+    backgroundColor:   C.surface2,
+    borderColor:       C.borderDefault,
   },
-  tcgPillActive: { backgroundColor: C.primary, borderColor: C.primary },
-  tcgPillEmoji: { fontSize: 15 },
-  tcgPillText: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
-  tcgPillTextActive: { color: '#FFFFFF', fontFamily: FONTS.bold },
+  tcgPillActive:     { backgroundColor: C.primaryTintMed, borderColor: 'rgba(22,139,255,0.40)' },
+  tcgPillPressed:    { backgroundColor: C.surface3 },
+  tcgPillEmoji:      { fontSize: 10, fontFamily: FONTS.bold, letterSpacing: 0.3 },
+  tcgPillText:       { color: C.textMuted, fontSize: 12, fontFamily: FONTS.semibold },
+  tcgPillTextActive: { color: C.primaryBright },
 
-  /* Spielerlevel card */
-  levelCard: {
-    backgroundColor: C.surface,
-    borderRadius: 20,
-    marginHorizontal: 20,
-    padding: 18,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: C.border,
-    shadowColor: C.cardShadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 4,
-    gap: 12,
+  // DS Card
+  card: {
+    backgroundColor:  C.surface,
+    borderRadius:     14,
+    borderWidth:      1,
+    borderColor:      C.border,
+    padding:          14,
+    marginHorizontal: 16,
+    marginBottom:     12,
+    gap:              10,
+    ...ELEVATION.panel,
   },
-  levelCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardEyebrow: {
-    color: C.textMuted,
-    fontSize: 11,
-    fontFamily: FONTS.bold,
+  cardHeader: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle:    { color: C.text, fontSize: 13, fontFamily: FONTS.semibold },
+  sectionLabel: {
+    color:         C.textFaint,
+    fontSize:      10,
+    fontFamily:    FONTS.semibold,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
-    letterSpacing: 1,
   },
-  levelBadge: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+
+  // Level badge (diamond shape)
+  levelBadge:   { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   levelBadgeDiamond: {
-    position: 'absolute',
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: C.primary,
-    backgroundColor: C.primaryGlow,
-    transform: [{ rotate: '45deg' }],
+    position:        'absolute',
+    width:           22,
+    height:          22,
+    borderRadius:    5,
+    borderWidth:     1.5,
+    borderColor:     C.primary,
+    backgroundColor: C.primaryTint,
+    transform:       [{ rotate: '45deg' }],
   },
-  levelBadgeWingL: {
-    position: 'absolute',
-    left: -3,
-    width: 16,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: C.primaryLight,
-    opacity: 0.45,
-    transform: [{ rotate: '-30deg' }],
-  },
-  levelBadgeWingR: {
-    position: 'absolute',
-    right: -3,
-    width: 16,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: C.primaryLight,
-    opacity: 0.45,
-    transform: [{ rotate: '30deg' }],
-  },
-  levelBadgeGlyph: { color: C.primary, fontSize: 16 },
+  levelBadgeGlyph: { color: C.primary, fontSize: 13 },
+
   levelValueRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  levelValue: { color: C.text, fontSize: 22, fontFamily: FONTS.extrabold },
-  levelXpText: { color: C.textMuted, fontSize: 12.5, fontFamily: FONTS.semibold },
-  xpTrack: { height: 8, borderRadius: 4, backgroundColor: C.surface3, overflow: 'hidden' },
-  xpFill: { height: '100%', borderRadius: 4, backgroundColor: C.primary },
+  levelValue:    { color: C.text, fontSize: 22, fontFamily: FONTS.bold, letterSpacing: -0.22 },
+  levelXpText:   { color: C.textMuted, fontSize: 12, fontFamily: FONTS.medium },
 
-  engagementRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  engagementItem: { alignItems: 'center', gap: 3, flex: 1 },
-  engagementIcon: { fontSize: 16 },
-  engagementValue: { color: C.text, fontSize: 15, fontFamily: FONTS.extrabold },
-  engagementLabel: { color: C.textMuted, fontSize: 9.5, fontFamily: FONTS.semibold, textAlign: 'center' },
-
-  /* Seit-Beginn card */
-  sinceCard: {
-    backgroundColor: C.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 24,
-    gap: 10,
-  },
-  sinceTitle: { color: C.text, fontSize: 13.5, fontFamily: FONTS.bold },
-
-  /* Activity feed */
-  activitySection: { marginBottom: 12 },
-  activityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: C.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: 14,
-  },
-  activityIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: C.primaryGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityIcon: { fontSize: 18 },
-  activityTitle: { color: C.text, fontSize: 13.5, fontFamily: FONTS.medium },
-  activityHighlight: { color: C.primary, fontFamily: FONTS.bold },
-  activityMeta: { color: C.textMuted, fontSize: 12, marginTop: 2 },
-
-  /* TCG content */
-  tcgContent: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-
-  /* Skill bar */
-  skillSection: { marginBottom: 20 },
-  skillBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 10,
-  },
-  skillSeg: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: C.surface3,
-  },
-  skillSegEditable: {
-    height: 8,
-    borderRadius: 4,
-  },
-  skillNum: {
-    color: C.textMuted,
-    fontSize: 12,
-    fontFamily: FONTS.semibold,
-    marginLeft: 6,
-    width: 30,
-  },
-
-  /* Actions */
-  sectionActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 24,
-  },
-  editBtn: {
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  editBtnText: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
-  cancelText: { color: C.textMuted, fontSize: 13 },
-  saveBtn: {
+  // DS ProgressBar (brand)
+  xpTrack: { height: 5, borderRadius: RADII.pill, backgroundColor: C.surface3, overflow: 'hidden' },
+  xpFill:  {
+    height:          5,
+    borderRadius:    RADII.pill,
     backgroundColor: C.primary,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    minWidth: 90,
-    alignItems: 'center',
+    shadowColor:     C.primary,
+    shadowOffset:    { width: 0, height: 0 },
+    shadowOpacity:   0.35,
+    shadowRadius:    4,
   },
-  saveBtnText: { color: C.text, fontSize: 13, fontFamily: FONTS.bold },
 
-  /* Fields */
-  fieldBlock: { marginBottom: 22 },
-  fieldLabel: {
-    color: C.textMuted,
-    fontSize: 11,
+  // DS StatCard grid (engagement)
+  engagementRow: { flexDirection: 'row', gap: 8 },
+  engagementCell: {
+    flex:              1,
+    backgroundColor:   C.surface2,
+    borderRadius:      RADII.sm,
+    paddingVertical:   8,
+    paddingHorizontal: 8,
+    alignItems:        'center',
+    gap:               3,
+  },
+  engagementValue: {
+    color:      C.text,
+    fontSize:   16,
     fontFamily: FONTS.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
+    fontVariant: ['tabular-nums'],
   },
-  fieldValue: { color: C.text, fontSize: 15 },
-  fieldEmpty: { color: C.textDim, fontSize: 15 },
-  fieldInput: {
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: C.text,
-    fontSize: 15,
-  },
-  multilineInput: { minHeight: 100, textAlignVertical: 'top' },
+  engagementLabel: { color: C.textFaint, fontSize: 10, fontFamily: FONTS.medium, textAlign: 'center' },
 
-  /* Mana */
-  manaRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  // Skill bar (DS ProgressBar variant)
+  skillBar: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
+  skillSeg: { flex: 1, height: 4, borderRadius: RADII.pill, backgroundColor: C.surface3 },
+  skillSegEditable: { height: 8, borderRadius: 4 },
+  skillSegFilled:   { backgroundColor: C.primary },
+  skillNum: { color: C.textFaint, fontSize: 12, fontFamily: FONTS.medium, marginLeft: 4, width: 28 },
+
+  // Section header
+  sectionHeader: {
+    flexDirection:  'row',
+    justifyContent: 'space-between',
+    alignItems:     'center',
+    marginBottom:   10,
+  },
+  linkText: { color: C.primary, fontSize: 12, fontFamily: FONTS.semibold },
+
+  // Edit actions
+  sectionActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 10 },
+  editBtn: {
+    borderWidth:       1,
+    borderColor:       C.borderDefault,
+    borderRadius:      10,
+    paddingHorizontal: 16,
+    paddingVertical:   8,
+  },
+  editBtnPressed: { backgroundColor: C.surface2 },
+  editBtnText:    { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
+  cancelText:     { color: C.textFaint, fontSize: 13, fontFamily: FONTS.regular },
+  saveBtn: {
+    backgroundColor:   C.primary,
+    borderRadius:      10,
+    paddingHorizontal: 20,
+    paddingVertical:   8,
+    minWidth:          90,
+    alignItems:        'center',
+  },
+  saveBtnPressed: { backgroundColor: C.primaryDeep },
+  saveBtnText:    { color: '#FFFFFF', fontSize: 13, fontFamily: FONTS.semibold },
+
+  // Decks section
+  deckSection:   { marginHorizontal: 16, marginBottom: 12 },
+  deckRow:       { gap: 12, paddingRight: 4 },
+  viewAllBtn: {
+    alignSelf:         'center',
+    marginTop:         12,
+    paddingVertical:   9,
+    paddingHorizontal: 16,
+    borderRadius:      10,
+    backgroundColor:   C.surface2,
+    borderWidth:       1,
+    borderColor:       C.border,
+  },
+  viewAllBtnPressed: { backgroundColor: C.surface3 },
+  viewAllBtnText:    { color: C.text, fontSize: 13, fontFamily: FONTS.semibold },
+  importDeckBtn: {
+    borderWidth:       1,
+    borderColor:       C.primary,
+    borderRadius:      10,
+    paddingVertical:   10,
+    paddingHorizontal: 16,
+    alignSelf:         'flex-start',
+    marginTop:         8,
+  },
+  importDeckBtnPressed: { backgroundColor: C.primaryTint },
+  importDeckBtnText:    { color: C.primary, fontSize: 13, fontFamily: FONTS.semibold },
+
+  // Fields
+  tcgContent: { paddingTop: 4 },
+  fieldBlock:  { marginHorizontal: 16, marginBottom: 20 },
+  fieldLabel: {
+    color:         C.textFaint,
+    fontSize:      10,
+    fontFamily:    FONTS.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom:  8,
+  },
+  fieldValue: { color: C.text, fontSize: 14, fontFamily: FONTS.regular },
+  fieldEmpty: { color: C.textDisabled, fontSize: 14, fontFamily: FONTS.regular },
+  fieldInput: {
+    backgroundColor:   C.surface2,
+    borderWidth:       1,
+    borderColor:       C.border,
+    borderRadius:      10,
+    paddingHorizontal: 12,
+    paddingVertical:   10,
+    color:             C.text,
+    fontSize:          14,
+    fontFamily:        FONTS.regular,
+  },
+  multilineInput: { minHeight: 88, textAlignVertical: 'top' },
+
+  // Mana colors
+  manaRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   manaBtn: {
-    alignItems: 'center',
-    gap: 5,
+    alignItems:    'center',
+    gap:           4,
     paddingVertical: 6,
     paddingHorizontal: 4,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    minWidth: 52,
+    borderRadius:  10,
+    borderWidth:   1.5,
+    borderColor:   'transparent',
+    minWidth:      52,
   },
-  manaBtnActive: {
-    borderColor: C.primary,
-    backgroundColor: C.primaryGlow,
-  },
-  manaLabel: { color: C.textMuted, fontSize: 10, fontFamily: FONTS.semibold },
+  manaBtnActive: { borderColor: C.primary, backgroundColor: C.primaryTint },
+  manaLabel:     { color: C.textFaint, fontSize: 10, fontFamily: FONTS.medium },
 
-  /* Play style */
+  // Play style
   styleRow: { flexDirection: 'row', gap: 8 },
   styleBtn: {
-    flex: 1,
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  styleBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  styleBtnText: { color: C.textMuted, fontSize: 14, fontFamily: FONTS.semibold },
-  styleBtnTextActive: { color: C.text },
-
-  /* Decks */
-  decksSection: { marginBottom: 28 },
-  decksHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  viewAllText: { color: C.primary, fontSize: 13, fontFamily: FONTS.bold },
-  deckRow: { gap: 14, paddingRight: 4 },
-  viewAllDecksBtn: {
-    alignSelf: 'center',
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 12,
+    flex:          1,
     backgroundColor: C.surface2,
+    borderWidth:   1,
+    borderColor:   C.borderDefault,
+    borderRadius:  10,
+    paddingVertical: 10,
+    alignItems:    'center',
   },
-  viewAllDecksText: { color: C.text, fontSize: 13, fontFamily: FONTS.semibold },
-  importDeckBtn: {
-    borderWidth: 1.5,
-    borderColor: C.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignSelf: 'flex-start',
-    marginTop: 14,
+  styleBtnActive:     { backgroundColor: C.primary, borderColor: C.primary },
+  styleBtnText:       { color: C.textMuted, fontSize: 13, fontFamily: FONTS.semibold },
+  styleBtnTextActive: { color: '#FFFFFF' },
+
+  // Activity
+  activityRow: {
+    flexDirection:    'row',
+    alignItems:       'center',
+    gap:              12,
+    backgroundColor:  C.surface2,
+    borderRadius:     12,
+    borderWidth:      1,
+    borderColor:      C.border,
+    padding:          12,
   },
-  importDeckText: { color: C.primary, fontSize: 14, fontFamily: FONTS.bold },
+  activityIconWrap: {
+    width:           36,
+    height:          36,
+    borderRadius:    8,
+    backgroundColor: C.primaryTint,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  activityTitle:     { color: C.text, fontSize: 13, fontFamily: FONTS.medium },
+  activityHighlight: { color: C.primary, fontFamily: FONTS.semibold },
+  activityMeta:      { color: C.textFaint, fontSize: 11, marginTop: 2 },
   });
 }

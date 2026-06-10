@@ -4,7 +4,7 @@ export interface TCGInfo {
   id: TCGId;
   name: string;
   color: string;
-  emoji: string;
+  abbr: string;
 }
 
 export interface Profile {
@@ -53,4 +53,5 @@ export interface UserDeck {
   cards: DeckCard[];
   card_count: number;
   created_at: string;
+  bracket: number | null;
 }

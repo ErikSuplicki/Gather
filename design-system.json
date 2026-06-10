@@ -1,0 +1,1831 @@
+{
+  "meta": {
+    "name": "Noir Console Design System",
+    "version": "1.0",
+    "target": "React Native iOS (native)",
+    "purpose": "Authoritative reference for AI-assisted feature development. Every value here is exact and implementation-ready. Do not deviate from these tokens without explicit product direction.",
+    "visual_character": "Premium dark-mode command-center dashboard. Layered charcoal surfaces, thin borders, rounded modular panels, electric blue interactive accents, restrained neon status colors. Dense but calm — like professional instrumentation. Never playful, never light-mode-inverted."
+  },
+
+  "design_philosophy": {
+    "principles": [
+      "Dark first: every screen must feel native to a black/charcoal environment — not a light UI inverted.",
+      "Modular panels: compose layouts from stacked rounded cards with clear hierarchy. Every panel should feel like an embedded hardware module.",
+      "Subtle contrast: express depth through borders, shadows, and small tonal shifts — never bright dividers.",
+      "Blue is the action language: reserve electric blue exclusively for primary actions, active/selected states, progress fills, focus rings, and navigation indicators.",
+      "Dense but calm: rich information is acceptable, but spacing, alignment, and typography must remain rigidly disciplined.",
+      "Minimal ornament: decoration comes from data, icons, subtle depth, and micro-interactions — never illustrations or loud gradients.",
+      "Soft tech premium: geometric precision + rounded edges + low-glow lighting."
+    ],
+    "do": [
+      "Use charcoal-on-black layering for all surfaces.",
+      "Keep blue reserved strictly for interaction and selection.",
+      "Use small but highly legible typography.",
+      "Align everything to the 4pt grid.",
+      "Use status chips to communicate categories and states.",
+      "Use tabular numbers for all data, stats, and financial values."
+    ],
+    "dont": [
+      "Never use pure black panels without a border — they will visually disappear.",
+      "Never overuse gradients or saturated colors outside of avatars.",
+      "Never use large or playful typography.",
+      "Never use heavy white dividers — use rgba(255,255,255,0.04) hairlines instead.",
+      "Never let cards float randomly — every layout must feel engineered on a grid.",
+      "Never use blue for decorative or informational-only elements."
+    ]
+  },
+
+  "tokens": {
+    "colors": {
+      "_comment": "All values are hex strings. Use rgba() strings for transparent values. These are the only approved colors.",
+
+      "background": {
+        "canvas":   "#0F1011",
+        "deep":     "#090A0B",
+        "panel":    "#1B1C1D",
+        "elevated": "#202122",
+        "hover":    "#252627",
+        "pressed":  "#18191A"
+      },
+
+      "border": {
+        "subtle":  "#2A2B2D",
+        "default": "#333538",
+        "strong":  "#44474A",
+        "focus":   "#1F8CFF"
+      },
+
+      "text": {
+        "primary":   "#F4F6F8",
+        "secondary": "#A7ADB5",
+        "tertiary":  "#71777F",
+        "disabled":  "#4D535A",
+        "inverse":   "#08090A"
+      },
+
+      "brand": {
+        "primary":      "#168BFF",
+        "bright":       "#4BA4FE",
+        "deep":         "#0B5FBD",
+        "glow":         "rgba(22,139,255,0.35)",
+        "glow_subtle":  "rgba(22,139,255,0.18)",
+        "ring":         "rgba(22,139,255,0.45)",
+        "tint_light":   "rgba(22,139,255,0.10)",
+        "tint_medium":  "rgba(22,139,255,0.12)",
+        "tint_badge":   "rgba(22,139,255,0.15)"
+      },
+
+      "status": {
+        "success":        "#57D298",
+        "success_bg":     "rgba(87,210,152,0.14)",
+        "warning":        "#F4A43B",
+        "warning_bg":     "rgba(244,164,59,0.14)",
+        "danger":         "#E36259",
+        "danger_bg":      "rgba(227,98,89,0.14)",
+        "danger_ring":    "rgba(227,98,89,0.30)",
+        "danger_tint":    "rgba(227,98,89,0.22)",
+        "info":           "#4BA4FE",
+        "info_bg":        "rgba(75,164,254,0.14)",
+        "neutral":        "#8A9099",
+        "neutral_bg":     "rgba(138,144,153,0.12)"
+      },
+
+      "data_viz": {
+        "line_primary":   "#168BFF",
+        "line_secondary": "#6CC5FF",
+        "area_primary":   "rgba(22,139,255,0.22)",
+        "area_secondary": "rgba(108,197,255,0.14)",
+        "grid":           "rgba(255,255,255,0.06)",
+        "axis":           "#71777F"
+      },
+
+      "code": {
+        "keyword":  "#C792EA",
+        "string":   "#57D298",
+        "default":  "#4BA4FE",
+        "comment":  "#71777F"
+      },
+
+      "surface_highlight": "rgba(255,255,255,0.04)",
+      "table_row_hover":   "rgba(255,255,255,0.015)",
+      "scrim":             "rgba(0,0,0,0.58)"
+    },
+
+    "typography": {
+      "_comment": "React Native font weights must be string literals. Inter weight 450 maps to '400'; weight 650 maps to '600'. letterSpacing in RN is absolute (pt), not em — values below are pre-calculated for each size. Use fontVariant: ['tabular-nums'] for all numeric data.",
+
+      "fontFamily": {
+        "primary": "Inter",
+        "fallback": "System",
+        "mono":    "IBMPlexMono"
+      },
+
+      "scale": {
+        "display": {
+          "fontSize":      28,
+          "lineHeight":    34,
+          "fontWeight":    "700",
+          "letterSpacing": -0.28,
+          "usage":         "Hero numbers, empty-state titles, splash screens only"
+        },
+        "h1": {
+          "fontSize":      22,
+          "lineHeight":    28,
+          "fontWeight":    "700",
+          "letterSpacing": -0.22,
+          "usage":         "Screen-level page titles"
+        },
+        "h2": {
+          "fontSize":      18,
+          "lineHeight":    24,
+          "fontWeight":    "600",
+          "letterSpacing": -0.18,
+          "usage":         "Section titles, card headers, modal titles"
+        },
+        "h3": {
+          "fontSize":      15,
+          "lineHeight":    20,
+          "fontWeight":    "600",
+          "letterSpacing": 0,
+          "usage":         "Subsections, list group headers, card titles"
+        },
+        "body": {
+          "fontSize":      14,
+          "lineHeight":    20,
+          "fontWeight":    "400",
+          "letterSpacing": 0,
+          "usage":         "Primary readable text, descriptions, paragraphs"
+        },
+        "bodySmall": {
+          "fontSize":      12,
+          "lineHeight":    16,
+          "fontWeight":    "400",
+          "letterSpacing": 0,
+          "usage":         "Metadata, captions, timestamps, secondary context"
+        },
+        "label": {
+          "fontSize":      11,
+          "lineHeight":    14,
+          "fontWeight":    "600",
+          "letterSpacing": 0.11,
+          "usage":         "Chips, tags, table column headers, section labels (use sentence case; uppercase only for very compact labels)"
+        },
+        "micro": {
+          "fontSize":      10,
+          "lineHeight":    12,
+          "fontWeight":    "500",
+          "letterSpacing": 0.20,
+          "usage":         "Dense UI labels, chart axis ticks, badge text, stat support text"
+        },
+        "mono": {
+          "fontSize":      13,
+          "lineHeight":    20,
+          "fontWeight":    "400",
+          "fontFamily":    "IBMPlexMono",
+          "letterSpacing": 0,
+          "color":         "#4BA4FE",
+          "usage":         "Code snippets, API keys, version strings, hash values"
+        }
+      },
+
+      "rules": {
+        "numeric_data":     "Always use fontVariant: ['tabular-nums'] for stats, prices, counts, percentages, timers, and table cells containing numbers.",
+        "case":             "Sentence case everywhere. UPPERCASE only for micro/label in very compact contexts like section headers.",
+        "anti_aliasing":    "Set fontSmoothing to auto in styles; RN handles iOS subpixel rendering automatically.",
+        "color_defaults":   "Default all text to colors.text.primary. Use secondary for supporting text, tertiary for meta/captions, disabled for inactive."
+      }
+    },
+
+    "spacing": {
+      "_comment": "All values in logical pixels. Base unit is 4pt. Always align to this grid.",
+      "base": 4,
+      "scale": {
+        "1":  4,
+        "2":  8,
+        "3":  12,
+        "4":  16,
+        "5":  20,
+        "6":  24,
+        "8":  32,
+        "10": 40
+      },
+      "screen_horizontal_padding": 16,
+      "card_padding":              14,
+      "card_padding_dense":        10,
+      "section_gap":               20,
+      "component_gap":             12,
+      "list_item_gap":             8,
+      "icon_text_gap":             8,
+      "card_header_bottom":        12,
+      "card_internal_gap":         10
+    },
+
+    "radii": {
+      "_comment": "borderRadius values in logical pixels.",
+      "sm":   8,
+      "md":   12,
+      "lg":   16,
+      "xl":   22,
+      "pill": 999,
+      "rules": [
+        "Most interactive components (buttons, inputs, icon buttons): borderRadius 10.",
+        "Cards and containers: borderRadius 12–14.",
+        "Outer screen containers, bottom sheets: borderRadius 22.",
+        "Tiny badges and chips: borderRadius 999 (pill).",
+        "Checkboxes: borderRadius 5.",
+        "Profile stat cells: borderRadius 8.",
+        "Legend dots: borderRadius 2."
+      ]
+    },
+
+    "elevation": {
+      "_comment": "React Native iOS shadow props. Android elevation equivalent included. Do not use box-shadow equivalents — use these props on View.",
+      "panel": {
+        "shadowColor":   "#000000",
+        "shadowOffset":  { "width": 0, "height": 12 },
+        "shadowOpacity": 0.25,
+        "shadowRadius":  15,
+        "elevation":     6,
+        "_inset_highlight": "Simulate the 1px top inset highlight with a borderTopColor of rgba(255,255,255,0.04) at 1px width"
+      },
+      "floating": {
+        "shadowColor":   "#000000",
+        "shadowOffset":  { "width": 0, "height": 18 },
+        "shadowOpacity": 0.42,
+        "shadowRadius":  22,
+        "elevation":     12,
+        "_inset_highlight": "Simulate with borderTopColor rgba(255,255,255,0.05)"
+      },
+      "active_glow": {
+        "_note": "Blue ring + glow for focused/active elements. Compose with borderColor and shadow.",
+        "borderColor":   "rgba(22,139,255,0.45)",
+        "borderWidth":   1,
+        "shadowColor":   "#168BFF",
+        "shadowOffset":  { "width": 0, "height": 0 },
+        "shadowOpacity": 0.18,
+        "shadowRadius":  9,
+        "elevation":     4
+      },
+      "none": {
+        "shadowColor":   "#000000",
+        "shadowOffset":  { "width": 0, "height": 0 },
+        "shadowOpacity": 0,
+        "shadowRadius":  0,
+        "elevation":     0
+      }
+    },
+
+    "motion": {
+      "_comment": "Use React Native Animated API. No CSS transitions. Timing functions map to Animated.timing with Easing.",
+      "easing":    "Easing.bezier(0.2, 0.8, 0.2, 1)",
+      "durations": {
+        "fast":   120,
+        "normal": 180,
+        "slow":   260,
+        "chart":  260
+      },
+      "patterns": {
+        "button_press":        "Scale to 0.98, duration 120ms fast easing on press-in; restore on press-out.",
+        "card_focus":          "Border color animates to focus blue over 180ms.",
+        "nav_indicator":       "Translate/slide the active indicator — never fade abruptly.",
+        "skeleton_shimmer":    "Animated.loop with LinearGradient interpolation, 1400ms duration.",
+        "chart_draw":          "Animated path stroke-dashoffset from full length to 0, 260ms, left-to-right.",
+        "toggle":              "Translate thumb over 180ms; change track color over 180ms simultaneously.",
+        "modal_slide_in":      "Slide up from bottom + fade scrim in over 260ms.",
+        "toast_appear":        "Slide down from top + opacity 0→1 over 180ms; auto-dismiss after 3000ms."
+      }
+    }
+  },
+
+  "react_native_notes": {
+    "setup": [
+      "Load Inter and IBM Plex Mono via expo-font or react-native-font before rendering.",
+      "Use SafeAreaView (from react-native-safe-area-context) as the root of every screen.",
+      "Set backgroundColor: '#0F1011' as the root View background on every screen — never rely on the OS default.",
+      "Use StatusBar style='light-content' on all screens."
+    ],
+    "layout_primitives": [
+      "Use React Native StyleSheet.create() for all styles — avoid inline styles except for dynamic values.",
+      "FlexDirection defaults to 'column' in RN — this matches the design's vertical card-stacking pattern.",
+      "Use gap property (RN 0.71+) or manually set marginBottom on children within columns.",
+      "All dimensions are in logical pixels (dp on Android, pt on iOS) — do not append 'px'."
+    ],
+    "shadows": [
+      "On iOS: use shadowColor, shadowOffset, shadowOpacity, shadowRadius.",
+      "On Android: use elevation. Shadows render differently — test on both.",
+      "overflow: 'hidden' cancels shadows on iOS — avoid on shadow-bearing containers."
+    ],
+    "borders": [
+      "RN does not support border shorthand. Use borderWidth + borderColor, or individual side properties.",
+      "For hairline dividers use StyleSheet.hairlineWidth for 0.5px lines rather than 1."
+    ],
+    "fonts": [
+      "fontWeight must be a string: '400', '500', '600', '700'. RN does not support '450' or '650'.",
+      "letterSpacing is absolute in points, not em. Pre-calculated values are in the typography.scale section.",
+      "fontVariant: ['tabular-nums'] for all numeric data displays."
+    ],
+    "pressable_states": [
+      "Use Pressable with style={({ pressed }) => ...} to apply pressed background color changes.",
+      "pressed state: reduce opacity to 0.85 OR switch background to the pressed color token — not both.",
+      "Never use TouchableOpacity opacity reduction on containers with text — it looks washed out at dark opacity levels. Prefer background color change."
+    ],
+    "icons": [
+      "Use react-native-svg with stroke-based icons only. Stroke width 1.7, strokeLinecap 'round', strokeLinejoin 'round', fill 'none'.",
+      "Default icon sizes: 16, 18, 20, 22, 24pt. Match to the component context.",
+      "Default icon color: colors.text.secondary (#A7ADB5). Active: colors.brand.bright (#4BA4FE). Danger: colors.status.danger (#E36259)."
+    ],
+    "scroll_views": [
+      "Use ScrollView with showsVerticalScrollIndicator={false} and contentContainerStyle for screen-level scrolling.",
+      "Add contentContainerStyle paddingBottom of at least 80 to clear the bottom navigation bar.",
+      "Use FlatList for lists longer than ~15 items."
+    ]
+  },
+
+  "components": {
+
+    "AppShell": {
+      "description": "Root screen container. Dark canvas with safe-area insets, hosts all major surfaces.",
+      "rn_component": "SafeAreaView > View",
+      "style": {
+        "flex":             1,
+        "backgroundColor":  "#0F1011"
+      },
+      "content_style": {
+        "flex":             1,
+        "paddingHorizontal": 16
+      }
+    },
+
+    "TopBar": {
+      "description": "Compact sticky screen header with title, optional subtitle, and 1–3 action buttons on the right.",
+      "rn_component": "View",
+      "style": {
+        "height":           56,
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "justifyContent":   "space-between",
+        "paddingHorizontal": 16,
+        "backgroundColor":  "transparent"
+      },
+      "sticky_style": {
+        "backgroundColor":  "#151617",
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#2A2B2D"
+      },
+      "title_style": {
+        "fontSize":      18,
+        "lineHeight":    24,
+        "fontWeight":    "600",
+        "letterSpacing": -0.18,
+        "color":         "#F4F6F8"
+      },
+      "subtitle_style": {
+        "fontSize":      12,
+        "lineHeight":    16,
+        "fontWeight":    "400",
+        "color":         "#71777F"
+      },
+      "actions_gap": 8,
+      "usage":        "Actions: 1–3 icon buttons or one compact primary button. Never more than one primary CTA in the header."
+    },
+
+    "BottomNavigation": {
+      "description": "Fixed bottom tab bar. Dark elevated pill with 4–5 items. Active item has blue icon + small dot indicator.",
+      "rn_component": "View (absolute positioned at bottom)",
+      "style": {
+        "height":           68,
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "justifyContent":   "space-around",
+        "backgroundColor":  "#1B1C1D",
+        "borderWidth":      1,
+        "borderColor":      "#2A2B2D",
+        "borderRadius":     22,
+        "paddingHorizontal": 8,
+        "marginHorizontal": 16,
+        "marginBottom":     24,
+        "shadowColor":      "#000000",
+        "shadowOffset":     { "width": 0, "height": 12 },
+        "shadowOpacity":    0.25,
+        "shadowRadius":     15
+      },
+      "nav_item_style": {
+        "alignItems":    "center",
+        "paddingVertical": 6,
+        "paddingHorizontal": 12,
+        "borderRadius":  12,
+        "gap":           4
+      },
+      "icon_size":         22,
+      "icon_color_active": "#4BA4FE",
+      "icon_color_inactive": "#71777F",
+      "label_style": {
+        "fontSize":    10,
+        "fontWeight":  "500",
+        "letterSpacing": 0
+      },
+      "label_color_active":   "#4BA4FE",
+      "label_color_inactive": "#71777F",
+      "indicator_dot": {
+        "width":           4,
+        "height":          4,
+        "borderRadius":    2,
+        "backgroundColor": "#4BA4FE",
+        "marginTop":       -2
+      },
+      "usage": "Always 4–5 tabs. No text label is required for very compact nav bars. Never use more than 5 items."
+    },
+
+    "Card": {
+      "description": "Primary content container. Appears as a compact hardware module embedded in the dark canvas.",
+      "rn_component": "View",
+      "style": {
+        "backgroundColor": "#1B1C1D",
+        "borderWidth":      1,
+        "borderColor":      "#2A2B2D",
+        "borderRadius":     14,
+        "padding":          14,
+        "shadowColor":      "#000000",
+        "shadowOffset":     { "width": 0, "height": 12 },
+        "shadowOpacity":    0.25,
+        "shadowRadius":     15
+      },
+      "header_style": {
+        "flexDirection":  "row",
+        "alignItems":     "center",
+        "justifyContent": "space-between",
+        "marginBottom":   12
+      },
+      "title_style": {
+        "fontSize":    15,
+        "fontWeight":  "600",
+        "letterSpacing": 0,
+        "color":       "#F4F6F8"
+      },
+      "subtitle_style": {
+        "fontSize":    12,
+        "fontWeight":  "400",
+        "color":       "#71777F",
+        "marginTop":   2
+      },
+      "usage": "Use as the standard building block for any grouped content. Stack cards vertically with 12pt gaps."
+    },
+
+    "StatCard": {
+      "description": "Compact metric display. Shows a label, large numeric value, supporting text, and an optional badge in the top-right corner.",
+      "rn_component": "View",
+      "style": {
+        "backgroundColor": "#202122",
+        "borderRadius":     12,
+        "padding":          12,
+        "minWidth":         140
+      },
+      "label_style": {
+        "fontSize":    12,
+        "fontWeight":  "400",
+        "color":       "#A7ADB5",
+        "marginBottom": 4
+      },
+      "value_style": {
+        "fontSize":      18,
+        "lineHeight":    24,
+        "fontWeight":    "600",
+        "letterSpacing": -0.18,
+        "color":         "#F4F6F8",
+        "fontVariant":   ["tabular-nums"]
+      },
+      "support_style": {
+        "fontSize":    10,
+        "fontWeight":  "500",
+        "color":       "#71777F",
+        "marginTop":   3,
+        "fontVariant": ["tabular-nums"]
+      },
+      "badge_position": {
+        "position": "absolute",
+        "top":      10,
+        "right":    10
+      },
+      "layout": "2 or 4 stat cards per row on iPhone. Use equal flex: 1 within a row wrapper.",
+      "usage": "Revenue, user counts, uptime, win rates, XP, subscriptions, session counts."
+    },
+
+    "ButtonPrimary": {
+      "description": "Main call-to-action button. Electric blue background, white text. Use sparingly — maximum one per view section.",
+      "rn_component": "Pressable",
+      "sizes": {
+        "sm": {
+          "height":         32,
+          "paddingHorizontal": 12,
+          "borderRadius":   8,
+          "fontSize":       12,
+          "fontWeight":     "600"
+        },
+        "md": {
+          "height":         40,
+          "paddingHorizontal": 16,
+          "borderRadius":   10,
+          "fontSize":       14,
+          "fontWeight":     "600"
+        },
+        "lg": {
+          "height":         48,
+          "paddingHorizontal": 24,
+          "borderRadius":   12,
+          "fontSize":       15,
+          "fontWeight":     "600"
+        }
+      },
+      "states": {
+        "default": {
+          "backgroundColor": "#168BFF",
+          "color":           "#FFFFFF"
+        },
+        "pressed": {
+          "backgroundColor": "#0B5FBD",
+          "transform":       [{ "translateY": 1 }]
+        },
+        "disabled": {
+          "backgroundColor": "#168BFF",
+          "opacity":         0.38
+        }
+      },
+      "important_cta_shadow": {
+        "shadowColor":   "#168BFF",
+        "shadowOffset":  { "width": 0, "height": 0 },
+        "shadowOpacity": 0.35,
+        "shadowRadius":  8
+      },
+      "text_style": {
+        "color":      "#FFFFFF",
+        "fontWeight": "600",
+        "letterSpacing": 0
+      },
+      "icon_gap": 6
+    },
+
+    "ButtonSecondary": {
+      "description": "Secondary action. Dark surface with border, primary text. Pairs alongside ButtonPrimary.",
+      "rn_component": "Pressable",
+      "sizes": {
+        "sm": { "height": 32, "paddingHorizontal": 12, "borderRadius": 8,  "fontSize": 12 },
+        "md": { "height": 40, "paddingHorizontal": 16, "borderRadius": 10, "fontSize": 14 },
+        "lg": { "height": 48, "paddingHorizontal": 24, "borderRadius": 12, "fontSize": 15 }
+      },
+      "states": {
+        "default": {
+          "backgroundColor": "#252627",
+          "borderWidth":     1,
+          "borderColor":     "#333538",
+          "color":           "#F4F6F8"
+        },
+        "pressed": {
+          "backgroundColor": "#18191A",
+          "borderColor":     "#44474A"
+        },
+        "disabled": {
+          "opacity": 0.38
+        }
+      },
+      "text_style": {
+        "color":      "#F4F6F8",
+        "fontWeight": "600"
+      }
+    },
+
+    "ButtonGhost": {
+      "description": "Tertiary action with no background. Secondary text color. Used in toolbars and inline contexts.",
+      "rn_component": "Pressable",
+      "style": {
+        "height":         40,
+        "paddingHorizontal": 16,
+        "borderRadius":   10,
+        "backgroundColor": "transparent"
+      },
+      "states": {
+        "default":  { "color": "#A7ADB5" },
+        "pressed":  { "backgroundColor": "#202122", "color": "#F4F6F8" },
+        "disabled": { "opacity": 0.38 }
+      },
+      "text_style": {
+        "fontSize":   14,
+        "fontWeight": "600",
+        "color":      "#A7ADB5"
+      }
+    },
+
+    "ButtonDanger": {
+      "description": "Destructive action. Red-tinted background with red text and border. Always confirm before executing.",
+      "rn_component": "Pressable",
+      "style": {
+        "height":            40,
+        "paddingHorizontal": 16,
+        "borderRadius":      10,
+        "backgroundColor":   "rgba(227,98,89,0.14)",
+        "borderWidth":       1,
+        "borderColor":       "rgba(227,98,89,0.30)"
+      },
+      "states": {
+        "pressed":  { "backgroundColor": "rgba(227,98,89,0.22)" },
+        "disabled": { "opacity": 0.38 }
+      },
+      "text_style": {
+        "fontSize":   14,
+        "fontWeight": "600",
+        "color":      "#E36259"
+      }
+    },
+
+    "IconButton": {
+      "description": "Square icon-only button. Used for toolbar actions, overflow menus, and inline controls.",
+      "rn_component": "Pressable",
+      "style": {
+        "width":           36,
+        "height":          36,
+        "backgroundColor": "#202122",
+        "borderWidth":     1,
+        "borderColor":     "#2A2B2D",
+        "borderRadius":    10,
+        "alignItems":      "center",
+        "justifyContent":  "center"
+      },
+      "states": {
+        "default": {
+          "backgroundColor": "#202122",
+          "borderColor":     "#2A2B2D",
+          "iconColor":       "#A7ADB5"
+        },
+        "pressed": {
+          "backgroundColor": "#252627",
+          "borderColor":     "#333538",
+          "iconColor":       "#F4F6F8"
+        },
+        "active": {
+          "backgroundColor": "rgba(22,139,255,0.10)",
+          "borderColor":     "rgba(22,139,255,0.40)",
+          "iconColor":       "#4BA4FE"
+        },
+        "disabled": { "opacity": 0.38 }
+      },
+      "icon_size": 18,
+      "variants": {
+        "compact": { "width": 28, "height": 28, "borderRadius": 8,  "iconSize": 14 },
+        "large":   { "width": 44, "height": 44, "borderRadius": 12, "iconSize": 22 }
+      }
+    },
+
+    "TextInput": {
+      "description": "Standard single-line text field. Dark elevated background, subtle border, blue focus ring.",
+      "rn_component": "TextInput",
+      "container_style": {
+        "position": "relative"
+      },
+      "style": {
+        "height":            42,
+        "backgroundColor":   "#202122",
+        "borderWidth":       1,
+        "borderColor":       "#2A2B2D",
+        "borderRadius":      10,
+        "paddingHorizontal": 12,
+        "color":             "#F4F6F8",
+        "fontSize":          14,
+        "fontWeight":        "400",
+        "lineHeight":        20
+      },
+      "with_icon_style": {
+        "paddingLeft": 38
+      },
+      "icon_container_style": {
+        "position":        "absolute",
+        "left":            11,
+        "top":             0,
+        "bottom":          0,
+        "justifyContent":  "center",
+        "pointerEvents":   "none"
+      },
+      "icon_color":       "#71777F",
+      "icon_size":        16,
+      "placeholder_color": "#71777F",
+      "states": {
+        "focused": {
+          "borderColor":   "#1F8CFF",
+          "shadowColor":   "#1F8CFF",
+          "shadowOffset":  { "width": 0, "height": 0 },
+          "shadowOpacity": 0.12,
+          "shadowRadius":  3
+        },
+        "error": {
+          "borderColor":   "#E36259",
+          "shadowColor":   "#E36259",
+          "shadowOffset":  { "width": 0, "height": 0 },
+          "shadowOpacity": 0.15,
+          "shadowRadius":  3
+        },
+        "disabled": { "opacity": 0.5 }
+      },
+      "label_style": {
+        "fontSize":    12,
+        "fontWeight":  "600",
+        "color":       "#A7ADB5",
+        "marginBottom": 6
+      },
+      "hint_style": {
+        "fontSize":   11,
+        "fontWeight": "400",
+        "color":      "#71777F",
+        "marginTop":  4
+      },
+      "hint_error_style": {
+        "color": "#E36259"
+      }
+    },
+
+    "TextArea": {
+      "description": "Multi-line text input. Same styling as TextInput but vertically expandable.",
+      "rn_component": "TextInput (multiline=true)",
+      "style": {
+        "backgroundColor":   "#202122",
+        "borderWidth":       1,
+        "borderColor":       "#2A2B2D",
+        "borderRadius":      10,
+        "paddingHorizontal": 12,
+        "paddingVertical":   10,
+        "color":             "#F4F6F8",
+        "fontSize":          14,
+        "lineHeight":        20,
+        "minHeight":         88,
+        "textAlignVertical": "top"
+      }
+    },
+
+    "SearchBar": {
+      "description": "Low-contrast embedded search field with left search icon and muted placeholder. Does not show a border on focus — stays visually quiet.",
+      "rn_component": "View > Icon + TextInput",
+      "style": {
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "height":           40,
+        "backgroundColor":  "#202122",
+        "borderWidth":      1,
+        "borderColor":      "#2A2B2D",
+        "borderRadius":     10,
+        "paddingHorizontal": 12,
+        "gap":              8
+      },
+      "input_style": {
+        "flex":        1,
+        "color":       "#F4F6F8",
+        "fontSize":    14,
+        "fontWeight":  "400"
+      },
+      "icon_color":       "#71777F",
+      "icon_size":        16,
+      "placeholder_color": "#71777F"
+    },
+
+    "Picker": {
+      "description": "Single-select dropdown. On iOS prefer a Picker presented in a Modal/ActionSheet rather than native HTML select.",
+      "rn_component": "Pressable (opens Modal with Picker or ActionSheet)",
+      "trigger_style": {
+        "height":            42,
+        "backgroundColor":   "#202122",
+        "borderWidth":       1,
+        "borderColor":       "#2A2B2D",
+        "borderRadius":      10,
+        "paddingHorizontal": 12,
+        "flexDirection":     "row",
+        "alignItems":        "center",
+        "justifyContent":    "space-between"
+      },
+      "text_style": {
+        "fontSize":  14,
+        "color":     "#F4F6F8",
+        "fontWeight": "400"
+      },
+      "chevron_color": "#71777F",
+      "chevron_size":  12
+    },
+
+    "Toggle": {
+      "description": "iOS-style on/off switch. Track animates from charcoal to brand blue; thumb slides from left to right.",
+      "rn_component": "Use React Native Switch component with custom colors, or Pressable with Animated.Value",
+      "rn_switch_props": {
+        "trackColor":       { "false": "#252627", "true": "#168BFF" },
+        "thumbColor":       "#FFFFFF",
+        "ios_backgroundColor": "#252627"
+      },
+      "custom_track_style": {
+        "width":          40,
+        "height":         22,
+        "backgroundColor_off": "#252627",
+        "backgroundColor_on":  "#168BFF",
+        "borderWidth":    1,
+        "borderColor_off": "#333538",
+        "borderColor_on":  "#168BFF",
+        "borderRadius":   999,
+        "padding":        2
+      },
+      "thumb_style": {
+        "width":           16,
+        "height":          16,
+        "borderRadius":    8,
+        "backgroundColor_off": "#71777F",
+        "backgroundColor_on":  "#FFFFFF"
+      },
+      "thumb_position": {
+        "off": 2,
+        "on":  22
+      },
+      "animation_duration": 180,
+      "label_style": {
+        "fontSize":  14,
+        "fontWeight": "400",
+        "color":     "#F4F6F8"
+      },
+      "row_gap": 10
+    },
+
+    "Checkbox": {
+      "description": "Square checkbox with rounded corners. Animates fill to blue with a white checkmark on check.",
+      "rn_component": "Pressable (row) + Animated View (box) + Text",
+      "box_style": {
+        "width":             18,
+        "height":            18,
+        "backgroundColor_unchecked": "#202122",
+        "backgroundColor_checked":   "#168BFF",
+        "borderWidth":       1.5,
+        "borderColor_unchecked": "#333538",
+        "borderColor_checked":   "#168BFF",
+        "borderRadius":      5,
+        "alignItems":        "center",
+        "justifyContent":    "center"
+      },
+      "checkmark": {
+        "_note":  "Render as a rotated L-shape using two View borders or an SVG checkmark icon in white",
+        "color":  "#FFFFFF",
+        "width":  10,
+        "height": 6
+      },
+      "animation_duration": 120,
+      "label_style": {
+        "fontSize":  14,
+        "fontWeight": "400",
+        "color":     "#F4F6F8"
+      },
+      "row_gap": 10
+    },
+
+    "RadioButton": {
+      "description": "Circular single-select control. Ring border animates to blue; inner dot appears on selection.",
+      "rn_component": "Pressable (row) + View (outer ring) + View (inner dot) + Text",
+      "outer_style": {
+        "width":          18,
+        "height":         18,
+        "borderRadius":   9,
+        "borderWidth":    1.5,
+        "borderColor_unselected": "#333538",
+        "borderColor_selected":   "#168BFF",
+        "backgroundColor": "#202122",
+        "alignItems":     "center",
+        "justifyContent": "center"
+      },
+      "inner_dot_style": {
+        "width":           8,
+        "height":          8,
+        "borderRadius":    4,
+        "backgroundColor": "#168BFF"
+      },
+      "animation_duration": 120,
+      "label_style": {
+        "fontSize":  14,
+        "fontWeight": "400",
+        "color":     "#F4F6F8"
+      },
+      "row_gap": 10
+    },
+
+    "SegmentedControl": {
+      "description": "Inline tab switcher. Dark container with a sliding active segment that has a subtle shadow lift.",
+      "rn_component": "View (container) + Pressable[] (segments)",
+      "container_style": {
+        "flexDirection":  "row",
+        "backgroundColor": "#202122",
+        "borderWidth":    1,
+        "borderColor":    "#2A2B2D",
+        "borderRadius":   12,
+        "padding":        3,
+        "gap":            2
+      },
+      "segment_style": {
+        "paddingVertical":   5,
+        "paddingHorizontal": 14,
+        "borderRadius":      10
+      },
+      "segment_text_style": {
+        "fontSize":   13,
+        "fontWeight": "600"
+      },
+      "states": {
+        "default": {
+          "backgroundColor": "transparent",
+          "textColor":       "#71777F"
+        },
+        "active": {
+          "backgroundColor": "#252627",
+          "textColor":       "#F4F6F8",
+          "shadowColor":     "#000000",
+          "shadowOffset":    { "width": 0, "height": 1 },
+          "shadowOpacity":   0.35,
+          "shadowRadius":    2
+        }
+      },
+      "animation_duration": 150
+    },
+
+    "Slider": {
+      "description": "Horizontal range selector. Blue thumb with glow on a dark track.",
+      "rn_component": "@react-native-community/slider or Pressable + PanResponder",
+      "track_style": {
+        "height":          4,
+        "backgroundColor": "#2A2B2D",
+        "borderRadius":    999
+      },
+      "fill_style": {
+        "height":          4,
+        "backgroundColor": "#168BFF",
+        "borderRadius":    999
+      },
+      "thumb_style": {
+        "width":           16,
+        "height":          16,
+        "borderRadius":    8,
+        "backgroundColor": "#168BFF",
+        "borderWidth":     2,
+        "borderColor":     "#FFFFFF",
+        "shadowColor":     "#168BFF",
+        "shadowOffset":    { "width": 0, "height": 0 },
+        "shadowOpacity":   0.35,
+        "shadowRadius":    3
+      }
+    },
+
+    "Badge": {
+      "description": "Pill-shaped status label. Non-interactive. Communicates state at a glance.",
+      "rn_component": "View + Text",
+      "base_style": {
+        "height":            20,
+        "paddingHorizontal": 8,
+        "borderRadius":      999,
+        "alignItems":        "center",
+        "justifyContent":    "center",
+        "alignSelf":         "flex-start"
+      },
+      "text_style": {
+        "fontSize":      10,
+        "fontWeight":    "600",
+        "letterSpacing": 0.10
+      },
+      "variants": {
+        "success": { "backgroundColor": "rgba(87,210,152,0.14)",  "color": "#57D298" },
+        "warning": { "backgroundColor": "rgba(244,164,59,0.14)",  "color": "#F4A43B" },
+        "danger":  { "backgroundColor": "rgba(227,98,89,0.14)",   "color": "#E36259" },
+        "info":    { "backgroundColor": "rgba(75,164,254,0.14)",   "color": "#4BA4FE" },
+        "neutral": { "backgroundColor": "rgba(138,144,153,0.12)", "color": "#A7ADB5" },
+        "brand":   { "backgroundColor": "rgba(22,139,255,0.15)",  "color": "#4BA4FE" }
+      }
+    },
+
+    "Chip": {
+      "description": "Interactive filter/tag pill. Toggleable. Can contain a leading icon and/or trailing close icon.",
+      "rn_component": "Pressable + optional Icon + Text + optional Icon",
+      "style": {
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "height":           24,
+        "paddingHorizontal": 10,
+        "borderRadius":     999,
+        "borderWidth":      1,
+        "gap":              5
+      },
+      "states": {
+        "default": {
+          "backgroundColor": "#202122",
+          "borderColor":     "#333538",
+          "textColor":       "#A7ADB5"
+        },
+        "pressed": {
+          "backgroundColor": "#252627",
+          "borderColor":     "#44474A",
+          "textColor":       "#F4F6F8"
+        },
+        "active": {
+          "backgroundColor": "rgba(22,139,255,0.12)",
+          "borderColor":     "rgba(22,139,255,0.40)",
+          "textColor":       "#4BA4FE"
+        }
+      },
+      "text_style": {
+        "fontSize":   11,
+        "fontWeight": "600"
+      },
+      "icon_size":   12,
+      "animation_duration": 120
+    },
+
+    "ProgressBar": {
+      "description": "Thin horizontal progress indicator. Use color variants to signal health state.",
+      "rn_component": "View (track) + Animated.View (fill)",
+      "track_style": {
+        "height":          5,
+        "backgroundColor": "#2A2B2D",
+        "borderRadius":    999,
+        "overflow":        "hidden"
+      },
+      "fill_style": {
+        "height":      5,
+        "borderRadius": 999
+      },
+      "variants": {
+        "brand":   { "backgroundColor": "#168BFF" },
+        "success": { "backgroundColor": "#57D298" },
+        "warning": { "backgroundColor": "#F4A43B" },
+        "danger":  { "backgroundColor": "#E36259" }
+      },
+      "glow_style": {
+        "shadowColor":   "#168BFF",
+        "shadowOffset":  { "width": 0, "height": 0 },
+        "shadowOpacity": 0.35,
+        "shadowRadius":  4
+      },
+      "header_style": {
+        "flexDirection":  "row",
+        "justifyContent": "space-between",
+        "alignItems":     "center",
+        "marginBottom":   6
+      },
+      "animation": "Animate width via Animated.timing with duration 260ms"
+    },
+
+    "ListItem": {
+      "description": "Universal row for lists and menus. Leading icon/avatar, title + subtitle block, trailing badge/chevron/action.",
+      "rn_component": "Pressable",
+      "style": {
+        "flexDirection":  "row",
+        "alignItems":     "center",
+        "minHeight":      52,
+        "paddingVertical": 10,
+        "paddingHorizontal": 12,
+        "borderRadius":   10,
+        "gap":            12
+      },
+      "states": {
+        "default": { "backgroundColor": "transparent" },
+        "pressed":  { "backgroundColor": "#202122" }
+      },
+      "icon_container_style": {
+        "width":           36,
+        "height":          36,
+        "backgroundColor": "#252627",
+        "borderRadius":    8,
+        "alignItems":      "center",
+        "justifyContent":  "center"
+      },
+      "icon_size":  18,
+      "icon_color": "#A7ADB5",
+      "content_style": {
+        "flex":    1,
+        "minWidth": 0
+      },
+      "title_style": {
+        "fontSize":   14,
+        "fontWeight": "500",
+        "color":      "#F4F6F8"
+      },
+      "subtitle_style": {
+        "fontSize":   11,
+        "fontWeight": "400",
+        "color":      "#71777F",
+        "marginTop":  2
+      },
+      "trailing_style": {
+        "flexDirection": "row",
+        "alignItems":    "center",
+        "gap":           6,
+        "color":         "#71777F"
+      },
+      "divider_style": {
+        "height":           1,
+        "backgroundColor":  "rgba(255,255,255,0.04)",
+        "marginHorizontal": 12
+      }
+    },
+
+    "DenseList": {
+      "description": "Data-dense table-style list. Used for analytics, transaction history, user tables. On phones, renders as stacked rows rather than horizontal table columns.",
+      "rn_component": "ScrollView + FlatList",
+      "container_style": {
+        "backgroundColor": "#1B1C1D",
+        "borderWidth":     1,
+        "borderColor":     "#2A2B2D",
+        "borderRadius":    16,
+        "overflow":        "hidden"
+      },
+      "header_row_style": {
+        "flexDirection":    "row",
+        "paddingHorizontal": 14,
+        "paddingVertical":  10,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#2A2B2D"
+      },
+      "header_cell_style": {
+        "fontSize":      10,
+        "fontWeight":    "600",
+        "letterSpacing": 0.50,
+        "color":         "#71777F",
+        "textTransform": "uppercase"
+      },
+      "row_style": {
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "paddingHorizontal": 14,
+        "paddingVertical":  11,
+        "minHeight":        44,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "rgba(255,255,255,0.04)"
+      },
+      "cell_style_primary": {
+        "fontSize":   13,
+        "fontWeight": "500",
+        "color":      "#F4F6F8",
+        "fontVariant": ["tabular-nums"]
+      },
+      "cell_style_secondary": {
+        "fontSize":   13,
+        "fontWeight": "400",
+        "color":      "#A7ADB5",
+        "fontVariant": ["tabular-nums"]
+      },
+      "row_pressed_style": {
+        "backgroundColor": "rgba(255,255,255,0.015)"
+      }
+    },
+
+    "Avatar": {
+      "description": "Circular user/entity identifier. Shows initials or image. Has 4 sizes and a stack mode.",
+      "rn_component": "View (circle) + Text (initials) or Image",
+      "sizes": {
+        "sm": { "width": 28, "height": 28, "borderRadius": 14, "fontSize": 11, "fontWeight": "700" },
+        "md": { "width": 36, "height": 36, "borderRadius": 18, "fontSize": 13, "fontWeight": "700" },
+        "lg": { "width": 48, "height": 48, "borderRadius": 24, "fontSize": 17, "fontWeight": "700" },
+        "xl": { "width": 64, "height": 64, "borderRadius": 32, "fontSize": 22, "fontWeight": "700" }
+      },
+      "border_style": {
+        "borderWidth": 2,
+        "borderColor": "#1B1C1D"
+      },
+      "default_background": "#252627",
+      "default_text_color": "#A7ADB5",
+      "gradient_examples": [
+        { "label": "blue",   "colors": ["#168BFF", "#0B5FBD"] },
+        { "label": "green",  "colors": ["#57D298", "#2a9d6d"] },
+        { "label": "orange", "colors": ["#F4A43B", "#c67c1a"] },
+        { "label": "red",    "colors": ["#E36259", "#b03028"] }
+      ],
+      "stack": {
+        "description": "Overlapping avatar row with overflow count badge",
+        "overlap":     -8,
+        "direction":   "row",
+        "overflow_badge": {
+          "backgroundColor": "#252627",
+          "textColor":       "#71777F"
+        }
+      }
+    },
+
+    "MenuCard": {
+      "description": "Feature entry point row. Taller than a list item with a left icon container and a right chevron. Used for settings, feature navigation, and creation shortcuts.",
+      "rn_component": "Pressable",
+      "style": {
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "height":           64,
+        "paddingHorizontal": 14,
+        "backgroundColor":  "#202122",
+        "borderWidth":      1,
+        "borderColor":      "#2A2B2D",
+        "borderRadius":     12,
+        "gap":              12
+      },
+      "states": {
+        "default": { "backgroundColor": "#202122", "borderColor": "#2A2B2D" },
+        "pressed":  { "backgroundColor": "#252627", "borderColor": "#333538" }
+      },
+      "icon_container_style": {
+        "width":           32,
+        "height":          32,
+        "backgroundColor": "#252627",
+        "borderRadius":    8,
+        "alignItems":      "center",
+        "justifyContent":  "center"
+      },
+      "icon_color":  "#4BA4FE",
+      "icon_size":   16,
+      "title_style": {
+        "fontSize":   14,
+        "fontWeight": "600",
+        "color":      "#F4F6F8"
+      },
+      "subtitle_style": {
+        "fontSize":   11,
+        "fontWeight": "400",
+        "color":      "#71777F",
+        "marginTop":  2
+      },
+      "chevron_color": "#71777F",
+      "chevron_size":  16
+    },
+
+    "Toast": {
+      "description": "Transient notification that appears at the top of the screen for ~3s. Has a status icon, title, optional message, and close button.",
+      "rn_component": "Animated.View (absolute positioned at top, slides in)",
+      "style": {
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "padding":          12,
+        "paddingRight":     14,
+        "backgroundColor":  "#252627",
+        "borderWidth":      1,
+        "borderColor":      "#333538",
+        "borderRadius":     12,
+        "gap":              10,
+        "maxWidth":         340,
+        "shadowColor":      "#000000",
+        "shadowOffset":     { "width": 0, "height": 18 },
+        "shadowOpacity":    0.42,
+        "shadowRadius":     22
+      },
+      "icon_size": 18,
+      "icon_colors": {
+        "success": "#57D298",
+        "warning": "#F4A43B",
+        "danger":  "#E36259",
+        "info":    "#4BA4FE"
+      },
+      "title_style": {
+        "fontSize":   13,
+        "fontWeight": "600",
+        "color":      "#F4F6F8"
+      },
+      "message_style": {
+        "fontSize":   12,
+        "fontWeight": "400",
+        "color":      "#A7ADB5",
+        "marginTop":  2
+      },
+      "close_icon_color": "#71777F",
+      "close_icon_size":  14,
+      "animation": {
+        "appear": "Slide down from top -60 to 0, opacity 0→1, duration 180ms",
+        "dismiss": "Slide up, opacity 1→0, duration 150ms",
+        "auto_dismiss_ms": 3000
+      }
+    },
+
+    "BottomSheet": {
+      "description": "Modal sheet that slides up from the bottom. Has a drag handle, scrim background, and content area.",
+      "rn_component": "Modal > Animated.View + Pressable (scrim)",
+      "scrim_style": {
+        "flex":            1,
+        "backgroundColor": "rgba(0,0,0,0.58)",
+        "justifyContent":  "flex-end"
+      },
+      "sheet_style": {
+        "backgroundColor":  "#1B1C1D",
+        "borderTopLeftRadius":  22,
+        "borderTopRightRadius": 22,
+        "borderWidth":      1,
+        "borderColor":      "#333538",
+        "padding":          20,
+        "paddingTop":       12
+      },
+      "handle_style": {
+        "width":           36,
+        "height":          4,
+        "backgroundColor": "#44474A",
+        "borderRadius":    999,
+        "alignSelf":       "center",
+        "marginBottom":    16
+      },
+      "title_style": {
+        "fontSize":   18,
+        "fontWeight": "600",
+        "letterSpacing": -0.18,
+        "color":      "#F4F6F8",
+        "marginBottom": 8
+      },
+      "body_style": {
+        "fontSize":   14,
+        "fontWeight": "400",
+        "color":      "#A7ADB5",
+        "lineHeight": 20,
+        "marginBottom": 20
+      },
+      "animation": {
+        "appear": "Translate Y from +300 to 0, scrim opacity 0→1, duration 260ms",
+        "dismiss": "Translate Y from 0 to +300, scrim opacity 1→0, duration 220ms"
+      }
+    },
+
+    "ActionMenu": {
+      "description": "Contextual dropdown/popover with icon-labelled rows. Last item before a separator can be a destructive danger action.",
+      "rn_component": "Modal (absolute positioned) or react-native-popover-view",
+      "container_style": {
+        "backgroundColor": "#252627",
+        "borderWidth":     1,
+        "borderColor":     "#333538",
+        "borderRadius":    12,
+        "padding":         4,
+        "minWidth":        180,
+        "shadowColor":     "#000000",
+        "shadowOffset":    { "width": 0, "height": 18 },
+        "shadowOpacity":   0.42,
+        "shadowRadius":    22
+      },
+      "item_style": {
+        "flexDirection":    "row",
+        "alignItems":       "center",
+        "paddingVertical":  9,
+        "paddingHorizontal": 10,
+        "borderRadius":     8,
+        "gap":              10
+      },
+      "item_text_style": {
+        "fontSize":   14,
+        "fontWeight": "400",
+        "color":      "#A7ADB5"
+      },
+      "states": {
+        "pressed": {
+          "backgroundColor": "#1B1C1D",
+          "textColor":       "#F4F6F8"
+        }
+      },
+      "danger_text_color": "#E36259",
+      "separator_style": {
+        "height":          1,
+        "backgroundColor": "#2A2B2D",
+        "marginVertical":  4
+      },
+      "icon_size":  15,
+      "icon_color": "#A7ADB5"
+    },
+
+    "Tooltip": {
+      "description": "Small floating label that appears above a target on long-press. Shows contextual help text.",
+      "rn_component": "Animated.View (absolute above target)",
+      "style": {
+        "backgroundColor":   "#252627",
+        "borderWidth":       1,
+        "borderColor":       "#333538",
+        "borderRadius":      8,
+        "paddingVertical":   6,
+        "paddingHorizontal": 10,
+        "shadowColor":       "#000000",
+        "shadowOffset":      { "width": 0, "height": 18 },
+        "shadowOpacity":     0.42,
+        "shadowRadius":      22
+      },
+      "text_style": {
+        "fontSize":   12,
+        "fontWeight": "400",
+        "color":      "#F4F6F8",
+        "whiteSpace": "nowrap"
+      },
+      "arrow": {
+        "_note": "Render with a rotated View (8x8, same background) positioned below the tooltip box",
+        "size":        8,
+        "borderColor": "#333538"
+      }
+    },
+
+    "Tabs": {
+      "description": "Horizontal sub-navigation within a screen. Underline indicator slides to the active tab.",
+      "rn_component": "ScrollView (horizontal) + Pressable[]",
+      "container_style": {
+        "flexDirection":   "row",
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#2A2B2D"
+      },
+      "tab_style": {
+        "paddingVertical":   10,
+        "paddingHorizontal": 16
+      },
+      "tab_text_style": {
+        "fontSize":   14,
+        "fontWeight": "500"
+      },
+      "states": {
+        "default": { "textColor": "#71777F" },
+        "pressed":  { "textColor": "#A7ADB5" },
+        "active":   { "textColor": "#F4F6F8" }
+      },
+      "indicator_style": {
+        "position":         "absolute",
+        "bottom":           -1,
+        "height":           2,
+        "backgroundColor":  "#168BFF",
+        "borderRadius":     999
+      },
+      "animation": "Animated.timing on indicator left+width, 150ms duration"
+    },
+
+    "Breadcrumb": {
+      "description": "Horizontal navigation trail showing hierarchy. Separator is a forward slash.",
+      "rn_component": "View (row) + Text[] + Text (separator)",
+      "container_style": {
+        "flexDirection": "row",
+        "alignItems":    "center",
+        "gap":           6
+      },
+      "item_style_inactive": {
+        "fontSize":   13,
+        "fontWeight": "400",
+        "color":      "#71777F"
+      },
+      "item_style_active": {
+        "fontSize":   13,
+        "fontWeight": "400",
+        "color":      "#F4F6F8"
+      },
+      "separator_style": {
+        "fontSize":   12,
+        "color":      "#4D535A"
+      }
+    },
+
+    "Notification": {
+      "description": "Inline notification row in a feed or notification center. Status dot, title, body, and timestamp.",
+      "rn_component": "View",
+      "style": {
+        "flexDirection":    "row",
+        "gap":              12,
+        "paddingVertical":  12,
+        "paddingHorizontal": 14,
+        "backgroundColor":  "#202122",
+        "borderWidth":      1,
+        "borderColor":      "#2A2B2D",
+        "borderRadius":     12
+      },
+      "dot_style": {
+        "width":         8,
+        "height":        8,
+        "borderRadius":  4,
+        "marginTop":     5
+      },
+      "dot_colors": {
+        "blue":   { "backgroundColor": "#168BFF", "shadowColor": "#168BFF", "shadowOpacity": 0.35, "shadowRadius": 3, "shadowOffset": { "width": 0, "height": 0 } },
+        "green":  { "backgroundColor": "#57D298" },
+        "orange": { "backgroundColor": "#F4A43B" },
+        "red":    { "backgroundColor": "#E36259" }
+      },
+      "title_style": {
+        "fontSize":   13,
+        "fontWeight": "600",
+        "color":      "#F4F6F8"
+      },
+      "message_style": {
+        "fontSize":   12,
+        "fontWeight": "400",
+        "color":      "#A7ADB5",
+        "marginTop":  2
+      },
+      "time_style": {
+        "fontSize":   10,
+        "fontWeight": "500",
+        "color":      "#71777F",
+        "marginTop":  4
+      }
+    },
+
+    "ChartCard": {
+      "description": "Data visualization container. Line/area chart on a dark grid. Feels like glowing instrumentation, not marketing graphics.",
+      "rn_component": "View (card) + react-native-svg",
+      "card_style": {
+        "backgroundColor": "#1B1C1D",
+        "borderWidth":     1,
+        "borderColor":     "#2A2B2D",
+        "borderRadius":    14,
+        "padding":         14,
+        "shadowColor":     "#000000",
+        "shadowOffset":    { "width": 0, "height": 12 },
+        "shadowOpacity":   0.25,
+        "shadowRadius":    15
+      },
+      "chart_area_style": {
+        "marginTop": 12,
+        "height":    100
+      },
+      "grid_line_color":    "rgba(255,255,255,0.06)",
+      "grid_line_width":    1,
+      "line_colors": {
+        "primary":   "#168BFF",
+        "secondary": "#6CC5FF"
+      },
+      "line_widths": {
+        "primary":   2,
+        "secondary": 1.5
+      },
+      "area_gradient_primary": {
+        "top_color":    "#168BFF",
+        "top_opacity":  0.22,
+        "bottom_color": "#168BFF",
+        "bottom_opacity": 0
+      },
+      "area_gradient_secondary": {
+        "top_color":    "#6CC5FF",
+        "top_opacity":  0.14,
+        "bottom_color": "#6CC5FF",
+        "bottom_opacity": 0
+      },
+      "axis_text_color": "#71777F",
+      "legend": {
+        "container_gap": 14,
+        "dot_style": {
+          "width":        8,
+          "height":       8,
+          "borderRadius": 2
+        },
+        "label_style": {
+          "fontSize":   10,
+          "fontWeight": "400",
+          "color":      "#71777F"
+        }
+      },
+      "secondary_line_dash": [4, 3]
+    },
+
+    "ProfileCard": {
+      "description": "User identity card. Avatar + name + role + plan badge, with a 3-column stat strip below.",
+      "rn_component": "View (card)",
+      "style": {
+        "backgroundColor": "#1B1C1D",
+        "borderWidth":     1,
+        "borderColor":     "#2A2B2D",
+        "borderRadius":    14,
+        "padding":         16,
+        "shadowColor":     "#000000",
+        "shadowOffset":    { "width": 0, "height": 12 },
+        "shadowOpacity":   0.25,
+        "shadowRadius":    15
+      },
+      "header_style": {
+        "flexDirection": "row",
+        "alignItems":    "center",
+        "gap":           12,
+        "marginBottom":  14
+      },
+      "name_style": {
+        "fontSize":   16,
+        "fontWeight": "700",
+        "color":      "#F4F6F8"
+      },
+      "role_style": {
+        "fontSize":   12,
+        "fontWeight": "400",
+        "color":      "#71777F",
+        "marginTop":  2
+      },
+      "stats_container_style": {
+        "flexDirection": "row",
+        "gap":           8
+      },
+      "stat_cell_style": {
+        "flex":          1,
+        "backgroundColor": "#202122",
+        "borderRadius":  8,
+        "paddingVertical": 8,
+        "paddingHorizontal": 10,
+        "alignItems":    "center"
+      },
+      "stat_value_style": {
+        "fontSize":    16,
+        "fontWeight":  "700",
+        "color":       "#F4F6F8",
+        "fontVariant": ["tabular-nums"]
+      },
+      "stat_label_style": {
+        "fontSize":   10,
+        "fontWeight": "400",
+        "color":      "#71777F",
+        "marginTop":  2
+      }
+    },
+
+    "SkeletonLoader": {
+      "description": "Animated shimmer placeholder displayed while content is loading.",
+      "rn_component": "Animated.View with LinearGradient (expo-linear-gradient or react-native-linear-gradient)",
+      "container_style": {
+        "borderRadius":    8,
+        "overflow":        "hidden"
+      },
+      "animation": {
+        "type":             "shimmer",
+        "colors":           ["#202122", "#252627", "#202122"],
+        "duration_ms":      1400,
+        "interpolation":    "translateX from -screenWidth to +screenWidth"
+      },
+      "variants": {
+        "text":  { "height": 12, "marginBottom": 8,  "borderRadius": 4 },
+        "title": { "height": 18, "marginBottom": 10, "borderRadius": 4 },
+        "block": { "height": 60, "borderRadius": 12 },
+        "avatar_sm": { "width": 28, "height": 28, "borderRadius": 14 },
+        "avatar_lg": { "width": 48, "height": 48, "borderRadius": 24 }
+      }
+    },
+
+    "EmptyState": {
+      "description": "Centered placeholder shown when a list or section has no content.",
+      "rn_component": "View (centered column)",
+      "container_style": {
+        "alignItems":    "center",
+        "justifyContent": "center",
+        "paddingVertical": 48,
+        "paddingHorizontal": 24,
+        "gap":           12
+      },
+      "icon_container_style": {
+        "width":           56,
+        "height":          56,
+        "backgroundColor": "#252627",
+        "borderRadius":    16,
+        "alignItems":      "center",
+        "justifyContent":  "center"
+      },
+      "icon_size":  24,
+      "icon_color": "#71777F",
+      "title_style": {
+        "fontSize":    18,
+        "fontWeight":  "700",
+        "color":       "#F4F6F8",
+        "textAlign":   "center"
+      },
+      "description_style": {
+        "fontSize":    14,
+        "fontWeight":  "400",
+        "color":       "#71777F",
+        "textAlign":   "center",
+        "maxWidth":    260,
+        "lineHeight":  20
+      }
+    },
+
+    "CodeBlock": {
+      "description": "Monospace code display. Dark deep background, syntax-colored text.",
+      "rn_component": "ScrollView (horizontal) > Text",
+      "style": {
+        "backgroundColor":   "#090A0B",
+        "borderWidth":       1,
+        "borderColor":       "#2A2B2D",
+        "borderRadius":      12,
+        "paddingVertical":   14,
+        "paddingHorizontal": 16
+      },
+      "text_style": {
+        "fontFamily":  "IBMPlexMono",
+        "fontSize":    12,
+        "lineHeight":  20,
+        "color":       "#4BA4FE"
+      },
+      "syntax_colors": {
+        "keyword": "#C792EA",
+        "string":  "#57D298",
+        "comment": "#71777F",
+        "default": "#4BA4FE"
+      }
+    },
+
+    "Divider": {
+      "description": "Horizontal separator. Two styles: plain hairline or labeled.",
+      "rn_component": "View",
+      "plain_style": {
+        "height":          1,
+        "backgroundColor": "#2A2B2D"
+      },
+      "labeled_style": {
+        "flexDirection": "row",
+        "alignItems":    "center",
+        "gap":           12
+      },
+      "line_style": {
+        "flex":            1,
+        "height":          1,
+        "backgroundColor": "#2A2B2D"
+      },
+      "label_text_style": {
+        "fontSize":      11,
+        "fontWeight":    "600",
+        "color":         "#71777F",
+        "textTransform": "uppercase",
+        "letterSpacing": 0.66
+      }
+    },
+
+    "Rating": {
+      "description": "5-star rating display. Filled stars in warning yellow, empty stars in disabled gray.",
+      "rn_component": "View (row) + Text[]",
+      "container_style": {
+        "flexDirection": "row",
+        "gap":           3
+      },
+      "star_style_on":  { "fontSize": 16, "color": "#F4A43B" },
+      "star_style_off": { "fontSize": 16, "color": "#4D535A" }
+    }
+  },
+
+  "screen_patterns": {
+    "home_dashboard": {
+      "structure": [
+        "TopBar with screen title and 1–2 icon action buttons",
+        "Horizontal scrollable row of 2–4 StatCards (equal width, flex: 1)",
+        "ChartCard (full width)",
+        "Section label (Micro + uppercase + tertiary)",
+        "Vertical list of ListItems or MenuCards",
+        "Vertical list of Notification items"
+      ],
+      "spacing": "16pt horizontal padding on all sides. 12pt gap between cards. 20pt between named sections."
+    },
+    "detail_screen": {
+      "structure": [
+        "TopBar with back chevron + title",
+        "ProfileCard or hero StatCard (full width)",
+        "Tabs for sub-sections",
+        "Content section (list or chart) matching the active tab",
+        "Sticky bottom ButtonPrimary for the main action"
+      ]
+    },
+    "creation_flow": {
+      "structure": [
+        "TopBar with cancel (ghost button) + 'Create' title + optional step indicator",
+        "Scrollable form fields (TextInput, Picker, Toggle, etc.)",
+        "Section dividers between logical groups",
+        "BottomSheet for complex sub-selections",
+        "Fixed bottom ButtonPrimary (full width) as the primary CTA"
+      ],
+      "notes": "Use looser spacing in creation flows compared to dashboard density."
+    },
+    "settings_screen": {
+      "structure": [
+        "TopBar",
+        "ProfileCard at top",
+        "Grouped MenuCards for each settings category (API, Security, Billing, etc.)",
+        "Danger zone section (red-tinted) at the bottom for destructive actions"
+      ]
+    }
+  },
+
+  "iconography": {
+    "style":       "Thin-line geometric. Fill: none. Stroke-based only.",
+    "stroke_width": 1.7,
+    "stroke_linecap": "round",
+    "stroke_linejoin": "round",
+    "sizes":       [16, 18, 20, 22, 24],
+    "colors": {
+      "default":  "#A7ADB5",
+      "muted":    "#71777F",
+      "active":   "#4BA4FE",
+      "danger":   "#E36259",
+      "success":  "#57D298",
+      "warning":  "#F4A43B"
+    },
+    "library_recommendation": "lucide-react-native or react-native-svg with custom SVG paths. Never use filled cartoon icons.",
+    "anti_patterns": [
+      "No filled/solid icons.",
+      "No icons with drop shadows.",
+      "No icons larger than 24pt in body content.",
+      "No multi-color icons (monochrome only, inheriting stroke color)."
+    ]
+  },
+
+  "implementation_rules": {
+    "never_do": [
+      "Never hardcode color values inline — always reference the token names from this document.",
+      "Never use a fontWeight not in ['400','500','600','700'].",
+      "Never place blue on anything that is not interactive or selected.",
+      "Never use backgroundColor: '#000000' for panels — use '#0F1011' (canvas) or '#1B1C1D' (panel).",
+      "Never use overflow: 'hidden' on a View that needs to show a shadow.",
+      "Never use white dividers — use rgba(255,255,255,0.04) or #2A2B2D only.",
+      "Never use more than one primary CTA button visible at the same time on a screen.",
+      "Never use illustrations or colorful decorative gradients in UI chrome.",
+      "Never set a borderRadius below 8 on interactive components."
+    ],
+    "always_do": [
+      "Always align spacing to the 4pt grid.",
+      "Always use fontVariant: ['tabular-nums'] on any number that changes or is compared.",
+      "Always use SafeAreaView on screen root and account for bottom inset above tab bar.",
+      "Always animate state changes — never instant color/position switches (minimum 120ms).",
+      "Always provide a pressed/active visual state for every Pressable.",
+      "Always use tabular numbers (fontVariant) for stats, prices, and data values.",
+      "Always use sentence case for all UI text (not Title Case, not ALL CAPS unless micro label)."
+    ]
+  }
+}

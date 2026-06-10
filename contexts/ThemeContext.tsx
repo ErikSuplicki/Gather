@@ -1,41 +1,17 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Appearance } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { darkColors, lightColors, ThemeColors } from '@/constants/theme';
-
-type Scheme = 'light' | 'dark';
-
-const STORAGE_KEY = 'gather:colorScheme';
+import React, { createContext, useContext } from 'react';
+import { noirColors, ThemeColors } from '@/constants/theme';
 
 interface ThemeContextType {
-  scheme: Scheme;
+  scheme: 'dark';
   colors: ThemeColors;
-  toggleScheme: () => void;
+  toggleScheme: () => void; // no-op — DS is dark-only
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [scheme, setScheme] = useState<Scheme>(Appearance.getColorScheme() === 'light' ? 'light' : 'dark');
-
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then(stored => {
-      if (stored === 'light' || stored === 'dark') setScheme(stored);
-    });
-  }, []);
-
-  const toggleScheme = () => {
-    setScheme(prev => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      AsyncStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
-  };
-
-  const colors = scheme === 'light' ? lightColors : darkColors;
-
   return (
-    <ThemeContext.Provider value={{ scheme, colors, toggleScheme }}>
+    <ThemeContext.Provider value={{ scheme: 'dark', colors: noirColors, toggleScheme: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );

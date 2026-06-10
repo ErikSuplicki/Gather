@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Image,
   ActivityIndicator,
@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-import { FONTS, SPACING, ThemeColors } from '@/constants/theme';
+import { FONTS, ThemeColors, ELEVATION } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { supabase } from '@/lib/supabase';
@@ -26,20 +26,12 @@ export default function NameScreen() {
   const { colors: C } = useTheme();
   const styles = useMemo(() => makeStyles(C), [C]);
   const {
-    selectedTCGs,
-    region,
-    latitude,
-    longitude,
-    skillLevels,
-    username,
-    setUsername,
-    avatarBase64,
-    setAvatarBase64,
-    avatarUri,
-    setAvatarUri,
+    selectedTCGs, region, latitude, longitude, skillLevels,
+    username, setUsername, avatarBase64, setAvatarBase64, avatarUri, setAvatarUri,
   } = useOnboarding();
 
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -47,15 +39,9 @@ export default function NameScreen() {
       showAlert('Berechtigung benötigt', 'Wir brauchen Zugriff auf deine Fotos.');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-      base64: true,
+      mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8, base64: true,
     });
-
     if (!result.canceled && result.assets[0]) {
       setAvatarUri(result.assets[0].uri);
       setAvatarBase64(result.assets[0].base64 ?? null);
@@ -67,51 +53,33 @@ export default function NameScreen() {
       showAlert('Name fehlt', 'Bitte gib einen Anzeigenamen ein.');
       return;
     }
-
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Nicht angemeldet');
       const userId = session.user.id;
-
       let avatarUrl: string | null = null;
-      if (avatarBase64) {
-        avatarUrl = await uploadAvatar(avatarBase64, userId);
-      }
-
-      // Upsert profile (handles first-time and re-onboarding)
+      if (avatarBase64) avatarUrl = await uploadAvatar(avatarBase64, userId);
       const { error: profileError } = await supabase.from('profiles').upsert({
-        id: userId,
-        username: username.trim(),
-        avatar_url: avatarUrl,
+        id: userId, username: username.trim(), avatar_url: avatarUrl,
         city: region.split(',')[0]?.trim() ?? region,
-        region,
-        latitude,
-        longitude,
-        onboarding_complete: true,
+        region, latitude, longitude, onboarding_complete: true,
       });
       if (profileError) throw profileError;
-
-      // Replace TCG entries
       if (selectedTCGs.length > 0) {
         await supabase.from('user_tcgs').delete().eq('user_id', userId);
         const { error: tcgError } = await supabase.from('user_tcgs').insert(
-          selectedTCGs.map(tcg => ({
-            user_id: userId,
-            tcg,
-            skill_level: skillLevels[tcg] ?? 1,
-          }))
+          selectedTCGs.map(tcg => ({ user_id: userId, tcg, skill_level: skillLevels[tcg] ?? 1 }))
         );
         if (tcgError) throw tcgError;
       }
-
       router.replace('/(tabs)');
     } catch (err: unknown) {
       showAlert('Fehler', (err as Error).message ?? 'Speichern fehlgeschlagen.');
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
+
+  const canFinish = !!username.trim() && !saving;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -125,57 +93,63 @@ export default function NameScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.step}>SCHRITT 4 / 4</Text>
-            <Text style={styles.title}>Fast geschafft! 🎉</Text>
+            <Text style={styles.step}>Schritt 4 von 4</Text>
+            <Text style={styles.title}>Fast geschafft!</Text>
             <Text style={styles.subtitle}>Erstelle dein Spielerprofil</Text>
           </View>
 
-          {/* Avatar picker */}
-          <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} activeOpacity={0.8}>
+          {/* DS Avatar — large with camera overlay */}
+          <Pressable style={styles.avatarContainer} onPress={pickImage}>
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarIcon}>📷</Text>
-                <Text style={styles.avatarHint}>Foto auswählen{'\n'}(optional)</Text>
+                <Text style={styles.avatarHint}>Foto{'\n'}(optional)</Text>
               </View>
             )}
             <View style={styles.editOverlay}>
-              <Text style={styles.editOverlayText}>✎</Text>
+              <Text style={styles.editOverlayText}>+</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
-          {/* Username input */}
+          {/* DS TextInput */}
           <View style={styles.inputSection}>
-            <Text style={styles.label}>Dein Anzeigename *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="z.B. DerMagier"
-              placeholderTextColor={C.textMuted}
-              value={username}
-              onChangeText={setUsername}
-              maxLength={24}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
+            <Text style={styles.label}>Dein Anzeigename</Text>
+            <View style={[styles.inputWrap, inputFocused && styles.inputWrapFocused]}>
+              <TextInput
+                style={styles.input}
+                placeholder="z.B. DerMagier"
+                placeholderTextColor={C.textFaint}
+                value={username}
+                onChangeText={setUsername}
+                maxLength={24}
+                autoCorrect={false}
+                autoCapitalize="none"
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+              />
+            </View>
             <Text style={styles.hint}>Wird anderen Spielern angezeigt · max. 24 Zeichen</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* DS ButtonPrimary footer */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.finishBtn, (!username.trim() || saving) && styles.disabled]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.finishBtn,
+            pressed && canFinish && styles.finishBtnPressed,
+            !canFinish && styles.finishBtnDisabled,
+          ]}
           onPress={finish}
-          disabled={!username.trim() || saving}
-          activeOpacity={0.85}
+          disabled={!canFinish}
         >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.finishBtnText}>Fertig &amp; Losspielen 🚀</Text>
-          )}
-        </TouchableOpacity>
+          {saving
+            ? <ActivityIndicator color="#fff" />
+            : <Text style={styles.finishBtnText}>Fertig &amp; Losspielen</Text>
+          }
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -184,78 +158,102 @@ export default function NameScreen() {
 function makeStyles(C: ThemeColors) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  flex: { flex: 1 },
-  content: { padding: SPACING.lg, alignItems: 'center', paddingBottom: SPACING.xl },
-  header: { width: '100%', marginBottom: SPACING.xl },
-  step: { color: C.primary, fontSize: 11, fontFamily: FONTS.extrabold, letterSpacing: 2, marginBottom: SPACING.sm },
-  title: { color: C.text, fontSize: 30, fontFamily: FONTS.extrabold, marginBottom: SPACING.sm },
-  subtitle: { color: C.textMuted, fontSize: 15 },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: SPACING.xl,
-  },
+  flex:      { flex: 1 },
+  content:   { padding: 16, alignItems: 'center', paddingBottom: 32 },
+
+  header:   { width: '100%', marginBottom: 32 },
+  step:     { color: C.primary, fontSize: 11, fontFamily: FONTS.semibold, letterSpacing: 0.11, marginBottom: 8 },
+  title:    { color: C.text, fontSize: 22, fontFamily: FONTS.bold, letterSpacing: -0.22, marginBottom: 8 },
+  subtitle: { color: C.textMuted, fontSize: 14, fontFamily: FONTS.regular },
+
+  // DS Avatar (lg)
+  avatarContainer: { position: 'relative', marginBottom: 32 },
   avatar: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    borderWidth: 3,
-    borderColor: C.primary,
+    width:        100,
+    height:       100,
+    borderRadius: 50,
+    borderWidth:  2,
+    borderColor:  C.primary,
   },
   avatarPlaceholder: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width:           100,
+    height:          100,
+    borderRadius:    50,
     backgroundColor: C.surface2,
-    borderWidth: 2,
-    borderColor: C.border,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
+    borderWidth:     1.5,
+    borderColor:     C.borderDefault,
+    borderStyle:     'dashed',
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:             4,
   },
-  avatarIcon: { fontSize: 36 },
-  avatarHint: { color: C.textMuted, fontSize: 11, textAlign: 'center', lineHeight: 16 },
+  avatarHint: { color: C.textFaint, fontSize: 12, fontFamily: FONTS.semibold, textAlign: 'center' },
   editOverlay: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
+    position:        'absolute',
+    bottom:          2,
+    right:           2,
     backgroundColor: C.primary,
-    borderRadius: 14,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: C.bg,
+    borderRadius:    12,
+    width:           24,
+    height:          24,
+    alignItems:      'center',
+    justifyContent:  'center',
+    borderWidth:     2,
+    borderColor:     C.bg,
   },
-  editOverlayText: { color: '#fff', fontSize: 13 },
-  inputSection: { width: '100%', gap: SPACING.sm },
-  label: { color: C.textMuted, fontSize: 12, fontFamily: FONTS.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
+  editOverlayText: { color: '#fff', fontSize: 11 },
+
+  // DS TextInput
+  inputSection: { width: '100%', gap: 6 },
+  label: {
+    color:         C.textFaint,
+    fontSize:      10,
+    fontFamily:    FONTS.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  inputWrap: {
+    borderWidth:  1,
+    borderColor:  C.border,
+    borderRadius: 10,
+  },
+  inputWrapFocused: {
+    borderColor:   C.borderFocus,
+    shadowColor:   C.borderFocus,
+    shadowOffset:  { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius:  3,
+  },
   input: {
-    backgroundColor: C.surface2,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 14,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 15,
-    color: C.text,
-    fontSize: 18,
-    fontFamily: FONTS.semibold,
+    height:            42,
+    backgroundColor:   C.surface2,
+    borderRadius:      10,
+    paddingHorizontal: 12,
+    color:             C.text,
+    fontSize:          16,
+    fontFamily:        FONTS.semibold,
   },
-  hint: { color: C.textMuted, fontSize: 12 },
+  hint: { color: C.textFaint, fontSize: 11, fontFamily: FONTS.regular },
+
   footer: {
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
+    padding:        16,
+    paddingBottom:  32,
     borderTopWidth: 1,
     borderTopColor: C.border,
   },
   finishBtn: {
+    height:          48,
     backgroundColor: C.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
+    borderRadius:    12,
+    alignItems:      'center',
+    justifyContent:  'center',
+    shadowColor:     C.primary,
+    shadowOffset:    { width: 0, height: 0 },
+    shadowOpacity:   0.35,
+    shadowRadius:    8,
   },
-  disabled: { opacity: 0.35 },
-  finishBtnText: { color: '#fff', fontSize: 17, fontFamily: FONTS.bold },
+  finishBtnPressed:  { backgroundColor: C.primaryDeep },
+  finishBtnDisabled: { backgroundColor: C.surface3, shadowOpacity: 0, opacity: 0.55 },
+  finishBtnText:     { color: '#fff', fontSize: 15, fontFamily: FONTS.semibold },
   });
 }

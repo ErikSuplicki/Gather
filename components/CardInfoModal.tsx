@@ -5,7 +5,6 @@ import {
   Image,
   Modal,
   Pressable,
-  TouchableOpacity,
   ActivityIndicator,
   ScrollView,
   StyleSheet,
@@ -193,9 +192,13 @@ export function CardInfoModal({ visible, onClose, card, tcg }: Props) {
           style={[styles.panel, { maxWidth: panelMaxWidth, flexDirection: isNarrow ? 'column' : 'row' }]}
           onPress={(e) => e.stopPropagation()}
         >
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [styles.closeBtn, pressed && styles.closeBtnPressed]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Text style={styles.closeText}>✕</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {card.image ? (
             <Image source={{ uri: card.image }} style={[styles.image, { width: imgWidth, height: imgHeight }]} resizeMode="contain" />
@@ -239,7 +242,7 @@ function makeStyles(C: ThemeColors) {
   },
   panel: {
     backgroundColor: C.surface,
-    borderRadius: 20,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: C.border,
     padding: 20,
@@ -247,17 +250,19 @@ function makeStyles(C: ThemeColors) {
     position: 'relative',
     maxHeight: '90%',
     shadowColor: C.cardShadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 28,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 6,
   },
   closeBtn: {
     position: 'absolute', top: 14, right: 14, zIndex: 10,
-    width: 32, height: 32, borderRadius: 16,
+    width: 36, height: 36, borderRadius: 10,
     backgroundColor: C.surface2,
+    borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
+  closeBtnPressed: { backgroundColor: C.surface3 },
   closeText: { color: C.textMuted, fontSize: 13, fontFamily: FONTS.bold },
 
   image: { borderRadius: 12, backgroundColor: C.surface2, alignSelf: 'center' },
@@ -266,7 +271,7 @@ function makeStyles(C: ThemeColors) {
 
   infoCol: { flexShrink: 1 },
   spinner: { marginTop: 14, alignSelf: 'flex-start' },
-  name: { color: C.text, fontSize: 20, fontFamily: FONTS.extrabold, marginBottom: 10, paddingRight: 30 },
+  name: { color: C.text, fontSize: 20, fontFamily: FONTS.bold, marginBottom: 10, paddingRight: 30 },
   stats: { color: '#F0C75E', fontSize: 14, fontFamily: FONTS.extrabold, marginBottom: 10 },
   text: { color: C.text, fontSize: 14, lineHeight: 21, marginBottom: 16 },
   manaIcon: { width: 14, height: 14, marginHorizontal: 1 },

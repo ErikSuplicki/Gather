@@ -51,6 +51,45 @@ export function PersonIcon({ color, size, active }: NavIconProps) {
   );
 }
 
+export function FeedIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 6H20" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M4 12H20" stroke={color} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M4 18H14" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function SocialIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="9" cy="8" r="3" stroke={color} strokeWidth={1.8} />
+      <Path d="M3.5 19C3.8 15.6 6.2 13.4 9 13.4C11.8 13.4 14.2 15.6 14.5 19" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Circle cx="16.5" cy="7.5" r="2.5" stroke={color} strokeWidth={1.8} />
+      <Path d="M14.8 12.6C17.6 12.7 19.7 14.6 20.5 17.5" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function PlusIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 5V19" stroke={color} strokeWidth={2.4} strokeLinecap="round" />
+      <Path d="M5 12H19" stroke={color} strokeWidth={2.4} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function SearchIcon({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth={2} />
+      <Path d="M16.2 16.2L21 21" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 // ─── MTG mana icons ──────────────────────────────────────────────────────────
 // Official mana symbol images from Scryfall's public CDN
 

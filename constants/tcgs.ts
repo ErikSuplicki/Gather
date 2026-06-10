@@ -1,11 +1,11 @@
 import { TCGId, TCGInfo } from '@/types';
 
 export const TCG_LIST: TCGInfo[] = [
-  { id: 'mtg',      name: 'Magic: The Gathering', color: '#C8A84B', emoji: '⚔️' },
-  { id: 'pokemon',  name: 'Pokémon',              color: '#FFCB05', emoji: '⚡' },
-  { id: 'yugioh',   name: 'Yu-Gi-Oh!',            color: '#A855F7', emoji: '👁️' },
-  { id: 'starwars', name: 'Star Wars',             color: '#60A5FA', emoji: '⭐' },
-  { id: 'lorcana',  name: 'Disney Lorcana',        color: '#38BDF8', emoji: '✨' },
+  { id: 'mtg',      name: 'Magic: The Gathering', color: '#C8A84B', abbr: 'MTG' },
+  { id: 'pokemon',  name: 'Pokémon',              color: '#FFCB05', abbr: 'PKM' },
+  { id: 'yugioh',   name: 'Yu-Gi-Oh!',            color: '#A855F7', abbr: 'YGO' },
+  { id: 'starwars', name: 'Star Wars',             color: '#60A5FA', abbr: 'SW'  },
+  { id: 'lorcana',  name: 'Disney Lorcana',        color: '#38BDF8', abbr: 'LOR' },
 ];
 
 export const TCG_MAP = Object.fromEntries(
@@ -13,12 +13,12 @@ export const TCG_MAP = Object.fromEntries(
 ) as Record<TCGId, TCGInfo>;
 
 export const MTG_COLORS = [
-  { id: 'white',     label: 'Weiß',    symbol: '☀️' },
-  { id: 'blue',      label: 'Blau',    symbol: '💧' },
-  { id: 'black',     label: 'Schwarz', symbol: '💀' },
-  { id: 'red',       label: 'Rot',     symbol: '🔥' },
-  { id: 'green',     label: 'Grün',    symbol: '🌲' },
-  { id: 'colorless', label: 'Farblos', symbol: '💎' },
+  { id: 'white',     label: 'Weiß',    symbol: 'W' },
+  { id: 'blue',      label: 'Blau',    symbol: 'U' },
+  { id: 'black',     label: 'Schwarz', symbol: 'B' },
+  { id: 'red',       label: 'Rot',     symbol: 'R' },
+  { id: 'green',     label: 'Grün',    symbol: 'G' },
+  { id: 'colorless', label: 'Farblos', symbol: 'C' },
 ] as const;
 
 export const PLAY_STYLES = [
